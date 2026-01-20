@@ -1,0 +1,393 @@
+locals {
+  excluded_common_rules = [
+    "EC2MetaDataSSRF_BODY",          # Rule is blocking IdP OIDC app creation
+    "EC2MetaDataSSRF_QUERYARGUMENTS" # Rule is blocking IdP OIDC login
+  ]
+}
+
+resource "aws_wafv2_web_acl" "idp" {
+  name  = "idp"
+  scope = "REGIONAL"
+
+  default_action {
+    allow {}
+  }
+
+  rule {
+    name     = "BlockLargeRequests"
+    priority = 1
+
+    action {
+      block {}
+    }
+
+    statement {
+      or_statement {
+        statement {
+          size_constraint_statement {
+            field_to_match {
+              body {
+                oversize_handling = "MATCH"
+              }
+            }
+            comparison_operator = "GT"
+            size                = 8192
+            text_transformation {
+              priority = 0
+              type     = "NONE"
+            }
+          }
+        }
+        statement {
+          size_constraint_statement {
+            field_to_match {
+              cookies {
+                match_pattern {
+                  all {}
+                }
+                match_scope       = "ALL"
+                oversize_handling = "MATCH"
+              }
+            }
+            comparison_operator = "GT"
+            size                = 8192
+            text_transformation {
+              priority = 0
+              type     = "NONE"
+            }
+          }
+        }
+        statement {
+          size_constraint_statement {
+            field_to_match {
+              headers {
+                match_pattern {
+                  all {}
+                }
+                match_scope       = "ALL"
+                oversize_handling = "MATCH"
+              }
+            }
+            comparison_operator = "GT"
+            size                = 8192
+            text_transformation {
+              priority = 0
+              type     = "NONE"
+            }
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "BlockLargeRequests"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "InvalidHost"
+    priority = 5
+
+    action {
+      block {}
+    }
+
+    statement {
+      not_statement {
+        statement {
+          byte_match_statement {
+            field_to_match {
+              single_header {
+                name = "host"
+              }
+            }
+            text_transformation {
+              priority = 1
+              type     = "COMPRESS_WHITE_SPACE"
+            }
+            text_transformation {
+              priority = 2
+              type     = "LOWERCASE"
+            }
+            positional_constraint = "EXACTLY"
+            search_string         = var.domain
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "InvalidHost"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "CanadaOnlyGeoRestriction"
+    priority = 10
+
+    action {
+      block {
+        custom_response {
+          response_code = 403
+          response_header {
+            name  = "waf-block"
+            value = "CanadaOnlyGeoRestriction"
+          }
+        }
+      }
+    }
+
+    statement {
+      not_statement {
+        statement {
+          geo_match_statement {
+            country_codes = ["CA"]
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "CanadaOnlyGeoRestriction"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "AWSManagedRulesAmazonIpReputationList"
+    priority = 20
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesAmazonIpReputationList"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWSManagedRulesAmazonIpReputationList"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "RateLimitersRuleGroup"
+    priority = 30
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      rule_group_reference_statement {
+        arn = aws_wafv2_rule_group.rate_limiters_group_idp.arn
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "rate_limiters_rule_group"
+      sampled_requests_enabled   = false
+    }
+  }
+
+  rule {
+    name     = "AWSManagedRulesKnownBadInputsRuleSet"
+    priority = 40
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWSManagedRulesKnownBadInputsRuleSet"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "AWSManagedRulesLinuxRuleSet"
+    priority = 50
+    override_action {
+      none {}
+    }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesLinuxRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWSManagedRulesLinuxRuleSet"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "AWSManagedRulesCommonRuleSet"
+    priority = 60
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+
+        dynamic "rule_action_override" {
+          for_each = local.excluded_common_rules
+          content {
+            name = rule_action_override.value
+            action_to_use {
+              count {}
+            }
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWSManagedRulesCommonRuleSet"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "AWSManagedRulesAntiDDoSRuleSet"
+    priority = 70
+    override_action {
+      none {}
+    }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesAntiDDoSRuleSet"
+        vendor_name = "AWS"
+
+        managed_rule_group_configs {
+          aws_managed_rules_anti_ddos_rule_set {
+            client_side_action_config {
+              challenge {
+                sensitivity     = "HIGH"
+                usage_of_action = "ENABLED"
+                exempt_uri_regular_expression {
+                  regex_string = "/api/|.(acc|avi|css|gif|jpe?g|js|pdf|png|tiff?|ttf|webm|webp|woff2?)$"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWSManagedRulesAntiDDoSRuleSet"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "idp"
+    sampled_requests_enabled   = true
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_wafv2_rule_group" "rate_limiters_group_idp" {
+  capacity = 32 // 2, as a base cost. For each custom aggregation key that you specify, add 30 WCUs.
+  name     = "RateLimitersGroupidp"
+  scope    = "REGIONAL"
+
+  rule {
+    name     = "AllRequestLimit"
+    priority = 1
+
+    action {
+      block {}
+    }
+
+    statement {
+      rate_based_statement {
+        limit              = 1000
+        aggregate_key_type = "IP"
+
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AllRequestLimit"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "MutatingRequestLimit"
+    priority = 10
+
+    action {
+      block {}
+    }
+
+    statement {
+      rate_based_statement {
+        limit              = 200
+        aggregate_key_type = "IP"
+        scope_down_statement {
+          regex_match_statement {
+            field_to_match {
+              method {}
+            }
+            regex_string = "^(delete|patch|post|put)$"
+            text_transformation {
+              priority = 1
+              type     = "LOWERCASE"
+            }
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "MutatingRequestLimit"
+      sampled_requests_enabled   = true
+    }
+  }
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "RateLimitersGroup"
+    sampled_requests_enabled   = false
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_wafv2_web_acl_association" "idp" {
+  resource_arn = aws_lb.idp.arn
+  web_acl_arn  = aws_wafv2_web_acl.idp.arn
+}
