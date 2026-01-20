@@ -319,7 +319,7 @@ resource "aws_wafv2_web_acl" "idp" {
 
 resource "aws_wafv2_rule_group" "rate_limiters_group_idp" {
   capacity = 32 // 2, as a base cost. For each custom aggregation key that you specify, add 30 WCUs.
-  name     = "RateLimitersGroupidp"
+  name     = "RateLimitersGroup-idp"
   scope    = "REGIONAL"
 
   rule {

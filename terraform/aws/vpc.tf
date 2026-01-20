@@ -145,7 +145,7 @@ resource "aws_security_group_rule" "idp_db_ingress_ecs" {
   source_security_group_id = aws_security_group.idp_ecs.id
 }
 
-resource "aws_security_group_rule" "keycload_ecs_egress_db" {
+resource "aws_security_group_rule" "idp_ecs_egress_db" {
   description              = "Egress from idp ECS task to database"
   type                     = "egress"
   from_port                = 5432

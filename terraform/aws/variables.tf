@@ -1,5 +1,5 @@
 variable "account_id" {
-  description = "(Required) The account ID to perform actions on."
+  description = "The account ID to perform actions on."
   type        = string
 }
 
@@ -24,7 +24,7 @@ variable "env" {
 }
 
 variable "product_name" {
-  description = "(Required) The name of the product you are deploying."
+  description = "The name of the product you are deploying."
   type        = string
 }
 
@@ -34,24 +34,24 @@ variable "region" {
 }
 
 variable "idp_admin_username" {
-  description = "idp administrator username."
+  description = "IdP administrator username."
   type        = string
   sensitive   = true
 }
 
 variable "idp_admin_password" {
-  description = "idp administrator password."
+  description = "IdP administrator password."
   type        = string
   sensitive   = true
 }
 
 variable "idp_cluster_capacity_provider" {
-  description = "The capacity provider for the idp ECS cluster."
+  description = "The capacity provider for the IdP ECS cluster."
   type        = string
 }
 
 variable "idp_database" {
-  description = "The name of the idp database."
+  description = "The name of the IdP database."
   type        = string
   sensitive   = true
 }
@@ -67,13 +67,13 @@ variable "idp_database_max_acu" {
 }
 
 variable "idp_database_username" {
-  description = "The idp username to use for the database."
+  description = "The IdP username to use for the database."
   type        = string
   sensitive   = true
 }
 
 variable "idp_database_password" {
-  description = "The idp password to use for the database."
+  description = "The IdP password to use for the database."
   type        = string
   sensitive   = true
 }
@@ -107,21 +107,21 @@ variable "idp_task_cpu" {
 }
 
 variable "idp_task_desired_count" {
-  description = "The desired number of idp ECS tasks."
+  description = "The desired number of IdP ECS tasks."
   type        = number
 }
 
 variable "idp_task_max_capacity" {
-  description = "The maximum autoscaling capacity for idp ECS tasks."
+  description = "The maximum autoscaling capacity for IdP ECS tasks."
   type        = number
 }
 
 variable "idp_task_memory" {
-  description = "The memory units for the idp ECS task."
+  description = "The memory units for the IdP ECS task."
   type        = number
 }
 
 variable "idp_task_min_capacity" {
-  description = "The minimum autoscaling capacity for idp ECS tasks."
+  description = "The minimum autoscaling capacity for IdP ECS tasks."
   type        = number
 }

@@ -1,5 +1,5 @@
 #
-# RDS Postgress cluster
+# RDS Postgres cluster
 #
 module "idp_database" {
   source = "github.com/cds-snc/terraform-modules//rds?ref=v10.10.2"
