@@ -39,9 +39,20 @@ resource "aws_iam_policy" "idp_send_email" {
   policy = data.aws_iam_policy_document.idp_send_email.json
 }
 
-resource "aws_iam_user_policy_attachment" "idp_send_email" {
-  user       = aws_iam_user.idp_send_email.name
+resource "aws_iam_group" "idp_send_email" {
+  name = "idp_send_email"
+}
+
+resource "aws_iam_group_policy_attachment" "idp_send_email" {
+  group      = aws_iam_group.idp_send_email.name
   policy_arn = aws_iam_policy.idp_send_email.arn
+}
+
+resource "aws_iam_user_group_membership" "idp_send_email" {
+  user = aws_iam_user.idp_send_email.name
+  groups = [
+    aws_iam_group.idp_send_email.name
+  ]
 }
 
 resource "aws_iam_access_key" "idp_send_email" {

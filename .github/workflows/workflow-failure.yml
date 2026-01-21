@@ -31,5 +31,5 @@ jobs:
 
       - name: Notify Slack
         run: |
-          json='{"blocks":[{"type":"section","text":{"type":"mrkdwn","text":":red: Superset workflow failed: <${{ github.event.workflow_run.html_url }}|${{ github.event.workflow_run.name }}>"}}]}'
+          json='{"blocks":[{"type":"section","text":{"type":"mrkdwn","text":":red: Unified Accounts workflow failed: <${{ github.event.workflow_run.html_url }}|${{ github.event.workflow_run.name }}>"}}]}'
           curl -X POST -H 'Content-type: application/json' --data "$json" ${{ steps.webhook.outputs.SLACK_WEBHOOK_URL }}
