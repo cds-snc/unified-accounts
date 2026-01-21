@@ -20,6 +20,7 @@ resource "aws_ses_domain_identity_verification" "ses_verif" {
 
 resource "aws_iam_user" "idp_send_email" {
   name = "idp_send_email"
+  tags = local.common_tags
 }
 
 data "aws_iam_policy_document" "idp_send_email" {
@@ -37,6 +38,7 @@ data "aws_iam_policy_document" "idp_send_email" {
 resource "aws_iam_policy" "idp_send_email" {
   name   = "idp_send_email"
   policy = data.aws_iam_policy_document.idp_send_email.json
+  tags   = local.common_tags
 }
 
 resource "aws_iam_group" "idp_send_email" {
@@ -57,13 +59,4 @@ resource "aws_iam_user_group_membership" "idp_send_email" {
 
 resource "aws_iam_access_key" "idp_send_email" {
   user = aws_iam_user.idp_send_email.name
-}
-
-output "smtp_username" {
-  value = aws_iam_access_key.idp_send_email.id
-}
-
-output "smtp_password" {
-  sensitive = true
-  value     = aws_iam_access_key.idp_send_email.ses_smtp_password_v4
 }

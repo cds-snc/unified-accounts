@@ -117,4 +117,6 @@ resource "aws_alb_listener_rule" "idp_protocol_version" {
       values = ["/oauth/v2/token", "/.well-known/openid-configuration"] # REST API endpoints
     }
   }
+
+  tags = local.common_tags
 }
