@@ -2,7 +2,6 @@ module "idp_vpc" {
   source = "github.com/cds-snc/terraform-modules//vpc?ref=v10.10.2"
   name   = "idp-${var.env}"
 
-  enable_flow_log                  = true
   availability_zones               = 2
   cidrsubnet_newbits               = 8
   single_nat_gateway               = true
@@ -10,8 +9,18 @@ module "idp_vpc" {
   allow_https_request_out_response = true
   allow_https_request_in           = true
   allow_https_request_in_response  = true
+  enable_flow_log                  = false
 
   billing_tag_value = var.billing_tag_value
+}
+
+resource "aws_flow_log" "cloud_based_sensor" {
+  log_destination      = "arn:aws:s3:::${var.cbs_satellite_bucket_name}/vpc_flow_logs/"
+  log_destination_type = "s3"
+  traffic_type         = "ALL"
+  vpc_id               = module.idp_vpc.vpc_id
+  log_format           = "$${vpc-id} $${version} $${account-id} $${interface-id} $${srcaddr} $${dstaddr} $${srcport} $${dstport} $${protocol} $${packets} $${bytes} $${start} $${end} $${action} $${log-status} $${subnet-id} $${instance-id}"
+  tags                 = local.common_tags
 }
 
 resource "aws_network_acl_rule" "http_redirect" {
