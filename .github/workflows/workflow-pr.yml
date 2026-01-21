@@ -1,0 +1,22 @@
+name: Workflow Pull Request
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/*.yml"
+      - ".github/workflows/scripts/check-workflow-run-trigger.sh"
+
+permissions:
+  contents: read
+
+jobs:
+  workflow-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check workflow run trigger
+        run: |
+          .github/workflows/scripts/check-workflow-run-trigger.sh
