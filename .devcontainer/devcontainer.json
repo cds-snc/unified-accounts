@@ -1,0 +1,39 @@
+{
+	"name": "unified-accounts",
+	"image": "mcr.microsoft.com/devcontainers/base:bullseye",
+	"containerEnv": {
+		"SHELL": "/bin/zsh"
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/aws-cli:1": {
+			"version": "latest"
+		},
+		"ghcr.io/devcontainers/features/terraform:1": {
+			"version": "1.14.3",
+			"terragrunt": "0.98.0"
+		}
+	},
+
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"hashicorp.terraform",
+				"github.copilot",
+				"github.vscode-github-actions",
+				"hashicorp.hcl",
+				"redhat.vscode-yaml"
+			]
+		},
+		"codespaces": {
+			"extensions": [
+				"hashicorp.terraform",
+				"github.copilot",
+				"github.vscode-github-actions",
+				"hashicorp.hcl",
+				"redhat.vscode-yaml"
+			]
+		}
+	},
+
+	"remoteUser": "vscode"
+}

@@ -1,0 +1,62 @@
+name: Terraform Apply Staging
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "terraform/aws/**"
+      - "terraform/env/staging/**"
+      - "terraform/env/common/**"
+      - "terraform/env/root.hcl"
+      - ".github/workflows/tf-apply-staging.yml"
+
+env:
+  AWS_REGION: ca-central-1
+  TERRAFORM_VERSION: 1.14.3
+  TERRAGRUNT_VERSION: 0.98.0
+  TF_VAR_idp_admin_username: ${{ secrets.STAGING_IDP_ADMIN_USERNAME }}
+  TF_VAR_idp_admin_password: ${{ secrets.STAGING_IDP_ADMIN_PASSWORD }}
+  TF_VAR_idp_database: ${{ secrets.STAGING_IDP_DATABASE }}
+  TF_VAR_idp_database_username: ${{ secrets.STAGING_IDP_DATABASE_USERNAME }}
+  TF_VAR_idp_database_password: ${{ secrets.STAGING_IDP_DATABASE_PASSWORD }}
+  TF_VAR_idp_database_admin_username: ${{ secrets.STAGING_IDP_DATABASE_ADMIN_USERNAME }}
+  TF_VAR_idp_database_admin_password: ${{ secrets.STAGING_IDP_DATABASE_ADMIN_PASSWORD }}
+  TF_VAR_idp_secret_key: ${{ secrets.STAGING_IDP_SECRET_KEY }}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terragrunt-apply:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Audit DNS requests
+        uses: cds-snc/dns-proxy-action@85118f9b128d57d13dc3cc2ee11d014658dd3e1a
+        env:
+          DNS_PROXY_FORWARDTOSENTINEL: "true"
+          DNS_PROXY_LOGANALYTICSWORKSPACEID: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+          DNS_PROXY_LOGANALYTICSSHAREDKEY: ${{ secrets.LOG_ANALYTICS_WORKSPACE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup terraform tools
+        uses: cds-snc/terraform-tools-setup@5a19984bcb888600ad646e0caf5c6f4d0a54c165 # v1.2.0
+
+      - name: Configure aws credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.STAGING_AWS_ACCOUNT_ID }}:role/unified-accounts-apply 
+          role-session-name: TFApply
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Apply Terraform
+        working-directory: terraform/env/staging
+        run: terragrunt run apply --terragrunt-non-interactive -auto-approve
