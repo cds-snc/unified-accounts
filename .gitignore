@@ -16,3 +16,6 @@ terraform/aws/provider.tf
 *.crt
 *.key
 *.pem
+
+# Secrets
+login-client.pat

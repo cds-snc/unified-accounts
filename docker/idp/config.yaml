@@ -36,6 +36,9 @@ DefaultInstance:
     IdTokenLifetime: '0.5h'
     RefreshTokenIdleExpiration: '720h'
     RefreshTokenExpiration: '2160h'
+  Features:
+    LoginV2:
+      Required: true
 
 OIDC:
   DefaultAccessTokenLifetime: '0.5h'

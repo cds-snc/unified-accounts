@@ -21,6 +21,7 @@ env:
   TF_VAR_idp_database_password: ${{ secrets.STAGING_IDP_DATABASE_PASSWORD }}
   TF_VAR_idp_database_admin_username: ${{ secrets.STAGING_IDP_DATABASE_ADMIN_USERNAME }}
   TF_VAR_idp_database_admin_password: ${{ secrets.STAGING_IDP_DATABASE_ADMIN_PASSWORD }}
+  TF_VAR_idp_loginclient_machine_username: ${{ secrets.STAGING_IDP_LOGINCLIENT_MACHINE_USERNAME }}
   TF_VAR_idp_secret_key: ${{ secrets.STAGING_IDP_SECRET_KEY }}
 
 permissions:

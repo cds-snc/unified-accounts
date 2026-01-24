@@ -95,6 +95,37 @@ variable "idp_database_instance_count" {
   type        = number
 }
 
+variable "idp_loginclient_machine_username" {
+  description = "The machine username for the IdP login client."
+  type        = string
+  sensitive   = true
+}
+
+variable "idp_login_task_cpu" {
+  description = "The CPU units for the idp login ECS task."
+  type        = number
+}
+
+variable "idp_login_task_desired_count" {
+  description = "The desired number of IdP ECS login tasks."
+  type        = number
+}
+
+variable "idp_login_task_max_capacity" {
+  description = "The maximum autoscaling capacity for IdP ECS login tasks."
+  type        = number
+}
+
+variable "idp_login_task_memory" {
+  description = "The memory units for the IdP ECS login task."
+  type        = number
+}
+
+variable "idp_login_task_min_capacity" {
+  description = "The minimum autoscaling capacity for IdP ECS login tasks."
+  type        = number
+}
+
 variable "idp_secret_key" {
   description = "The secret key to use for the idp instance."
   type        = string

@@ -1,0 +1,1 @@
+FROM ghcr.io/zitadel/zitadel-login:v4.9.2@sha256:dab1f7ed2c0ce93be694fdff749e7e0e0a3f65cbbc3386d62f6adbf78eb4eb25

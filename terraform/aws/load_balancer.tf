@@ -20,20 +20,32 @@ resource "aws_lb" "idp" {
   tags = local.common_tags
 }
 
-resource "random_string" "alb_tg_suffix" {
+resource "random_string" "alb_idp_tg_suffix" {
   length  = 3
   special = false
   upper   = false
   keepers = {
     port     = 8080
     protocol = "HTTPS"
+    path     = "/debug/healthz"
+  }
+}
+
+resource "random_string" "alb_idp_login_tg_suffix" {
+  length  = 3
+  special = false
+  upper   = false
+  keepers = {
+    port     = 3000
+    protocol = "HTTP"
+    path     = "/ui/v2/login/healthy"
   }
 }
 
 resource "aws_lb_target_group" "idp" {
   for_each = local.protocol_versions
 
-  name                 = "idp-tg-${each.value}-${random_string.alb_tg_suffix.result}"
+  name                 = "idp-tg-${each.value}-${random_string.alb_idp_tg_suffix.result}"
   port                 = 8080
   protocol             = "HTTPS"
   protocol_version     = each.value
@@ -45,6 +57,35 @@ resource "aws_lb_target_group" "idp" {
     enabled  = true
     protocol = "HTTPS"
     path     = "/debug/healthz"
+    matcher  = "200-399"
+  }
+
+  stickiness {
+    type = "lb_cookie"
+  }
+
+  tags = local.common_tags
+
+  lifecycle {
+    create_before_destroy = true
+    ignore_changes = [
+      stickiness[0].cookie_name
+    ]
+  }
+}
+
+resource "aws_lb_target_group" "idp_login" {
+  name                 = "idp-login-tg-${random_string.alb_idp_login_tg_suffix.result}"
+  port                 = 3000
+  protocol             = "HTTP"
+  target_type          = "ip"
+  deregistration_delay = 30
+  vpc_id               = module.idp_vpc.vpc_id
+
+  health_check {
+    enabled  = true
+    protocol = "HTTP"
+    path     = "/ui/v2/login/healthy"
     matcher  = "200-399"
   }
 
@@ -100,6 +141,24 @@ resource "aws_lb_listener" "idp_http_redirect" {
   tags = local.common_tags
 }
 
+# Forward requests to the login UI
+resource "aws_alb_listener_rule" "idp_login" {
+  listener_arn = aws_lb_listener.idp.arn
+  priority     = 50
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.idp_login.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/ui/v2", "/ui/v2/", "/ui/v2/*"]
+    }
+  }
+
+  tags = local.common_tags
+}
 
 # Send REST API endpoint requests to the HTTP1 target group
 # All other requests are sent to the HTTP2 target group
