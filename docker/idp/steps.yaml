@@ -5,7 +5,13 @@
 # initialization is idempotent when run multiple times with the same Zitadel version.
 
 FirstInstance:
+  LoginClientPatPath: '/idp/login-client.pat'
   Org:
-    Name: cds-snc
+    Name: 'cds-snc'
     Human:
       PasswordChangeRequired: false
+    LoginClient:
+      Machine:
+        Name: 'Default IAM_LOGIN_CLIENT'
+      Pat:
+        ExpirationDate: '2029-01-01T00:00:00Z'
