@@ -12,10 +12,8 @@ terraform/aws/common_variables.tf
 terraform/aws/backend.tf
 terraform/aws/provider.tf
 
-# Certs
+# Secrets
 *.crt
 *.key
+*.pat
 *.pem
-
-# Secrets
-login-client.pat
