@@ -6,6 +6,9 @@ on:
       - "docker/**"
       - ".github/workflows/docker-pr.yml"
 
+env: 
+  REGISTRY_PREFIX: ${{ vars.STAGING_AWS_ACCOUNT_ID }}.dkr.ecr.ca-central-1.amazonaws.com
+
 permissions:
   contents: read
   pull-requests: write
