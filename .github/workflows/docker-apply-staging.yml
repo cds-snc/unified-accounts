@@ -60,8 +60,8 @@ jobs:
         docker buildx build 
           --push \
           --platform linux/arm64 \
-          -t "$REGISTRY_PREFIX/${{ matrix.service }}:sha-$GITHUB_SHA" \
-          -t "$REGISTRY_PREFIX/${{ matrix.service }}:latest" \
+          -t "${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:sha-$GITHUB_SHA" \
+          -t "${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:latest" \
           -f ./docker/${{ matrix.service }}/Dockerfile \
           ./docker/${{ matrix.service }}
 
@@ -70,7 +70,7 @@ jobs:
       env:
         TRIVY_DB_REPOSITORY: ${{ vars.TRIVY_DB_REPOSITORY }}
       with:
-        docker_image: "$REGISTRY_PREFIX/${{ matrix.service }}:latest"
+        docker_image: "${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:latest"
         dockerfile_path: "./docker/${{ matrix.service }}/Dockerfile"
         sbom_name: "${{ matrix.service }}"
         token: "${{ secrets.GITHUB_TOKEN }}"
