@@ -62,7 +62,7 @@ jobs:
       - name: Build image
         run: |
           make cert
-          docker buildx build 
+          docker buildx build \
             --platform linux/arm64 \
             -t "$REGISTRY_PREFIX/${{ matrix.service }}:latest" \
             -f ./docker/${{ matrix.service }}/Dockerfile \
