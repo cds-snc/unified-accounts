@@ -161,7 +161,7 @@ module "login_ecs" {
 
   create_cluster   = false
   cluster_name     = "idp"
-  service_name     = "login"
+  service_name     = "idp-login"
   task_cpu         = var.idp_login_task_cpu
   task_memory      = var.idp_login_task_memory
   cpu_architecture = "ARM64"

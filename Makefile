@@ -1,4 +1,4 @@
-.PHONY: cert docker-idp docker-login
+.PHONY: cert docker-idp docker-idp-login
 
 cert:
 	openssl \
@@ -8,7 +8,7 @@ cert:
 		-x509 -days 3650 \
 		-keyout ./docker/idp/private.key \
 		-out ./docker/idp/certificate.crt \
-		-subj "/C=CA/ST=Ontario/L=Ottawa/O=cds-snc/OU=platform/CN=accounts.cdssandbox.xyz/emailAddress=platform-core-services@cds-snc.ca"
+		-subj "/C=CA/ST=Ontario/L=Ottawa/O=cds-snc/OU=platform/CN=accounts.cdssandbox.xyz/emailAddress=platform-core-services@cds-snc.ca" > /dev/null 2>&1
 	chmod +r ./docker/idp/private.key
 
 docker-idp: cert
@@ -16,7 +16,7 @@ docker-idp: cert
 		-t idp:latest \
 		-f ./docker/idp/Dockerfile ./docker/idp
 
-docker-login:
+docker-idp-login:
 	docker build \
 		-t idp-login:latest \
-		-f ./docker/login/Dockerfile ./docker/login
+		-f ./docker/idp-login/Dockerfile ./docker/idp-login
