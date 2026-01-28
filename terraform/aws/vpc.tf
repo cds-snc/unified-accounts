@@ -137,12 +137,12 @@ resource "aws_security_group_rule" "idp_login_ecs_ingress_lb" {
 }
 
 resource "aws_security_group_rule" "idp_login_ecs_egress_idp_ecs" {
-  description       = "Egress from idp login ECS task to idp ECS task"
-  type              = "egress"
-  to_port           = 8080
-  from_port         = 8080
-  protocol          = "tcp"
-  security_group_id = aws_security_group.idp_login_ecs.id
+  description              = "Egress from idp login ECS task to idp ECS task"
+  type                     = "egress"
+  to_port                  = 8080
+  from_port                = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.idp_login_ecs.id
   source_security_group_id = aws_security_group.idp_ecs.id
 }
 
