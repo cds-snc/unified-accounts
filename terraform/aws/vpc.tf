@@ -108,6 +108,16 @@ resource "aws_security_group_rule" "idp_ecs_ingress_lb" {
   source_security_group_id = aws_security_group.idp_lb.id
 }
 
+resource "aws_security_group_rule" "idp_ecs_ingress_idp_login_ecs" {
+  description              = "Ingress from idp login ECS task to idp ECS task"
+  type                     = "ingress"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.idp_ecs.id
+  source_security_group_id = aws_security_group.idp_login_ecs.id
+}
+
 # ECS IdP Login
 resource "aws_security_group" "idp_login_ecs" {
   description = "NSG for idp login ECS Tasks"
@@ -124,6 +134,16 @@ resource "aws_security_group_rule" "idp_login_ecs_ingress_lb" {
   protocol                 = "tcp"
   security_group_id        = aws_security_group.idp_login_ecs.id
   source_security_group_id = aws_security_group.idp_lb.id
+}
+
+resource "aws_security_group_rule" "idp_login_ecs_egress_idp_ecs" {
+  description              = "Egress from idp login ECS task to idp ECS task"
+  type                     = "egress"
+  to_port                  = 8080
+  from_port                = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.idp_login_ecs.id
+  source_security_group_id = aws_security_group.idp_ecs.id
 }
 
 resource "aws_security_group_rule" "idp_login_ecs_egress_internet" {
@@ -248,4 +268,11 @@ resource "aws_security_group_rule" "idp_login_efs_ingress_ecs" {
   protocol                 = "tcp"
   security_group_id        = aws_security_group.idp_efs.id
   source_security_group_id = aws_security_group.idp_login_ecs.id
+}
+
+resource "aws_service_discovery_private_dns_namespace" "idp" {
+  name        = "idp.ecs.local"
+  description = "DNS namespace used to provide service discovery for the IdP ECS services"
+  vpc         = module.idp_vpc.vpc_id
+  tags        = local.common_tags
 }
