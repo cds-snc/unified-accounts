@@ -272,7 +272,7 @@ resource "aws_security_group_rule" "idp_login_efs_ingress_ecs" {
 
 resource "aws_service_discovery_private_dns_namespace" "idp" {
   name        = "idp.ecs.local"
-  description = "DNS namespace used to provide service discovery for the IDP ECS services"
+  description = "DNS namespace used to provide service discovery for the IdP ECS services"
   vpc         = module.idp_vpc.vpc_id
   tags        = local.common_tags
 }
