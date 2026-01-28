@@ -67,7 +67,7 @@ locals {
   login_container_env = [
     {
       "name"  = "ZITADEL_API_URL",
-      "value" = "http://idp.${aws_service_discovery_private_dns_namespace.idp.name}:8080"
+      "value" = "https://${var.domain}"
     },
     {
       "name"  = "NEXT_PUBLIC_BASE_PATH",
@@ -146,10 +146,8 @@ module "idp_ecs" {
       container_port   = 8080
     }
   ]
-  subnet_ids                     = module.idp_vpc.private_subnet_ids
-  security_group_ids             = [aws_security_group.idp_ecs.id]
-  service_discovery_enabled      = true
-  service_discovery_namespace_id = aws_service_discovery_private_dns_namespace.idp.id
+  subnet_ids         = module.idp_vpc.private_subnet_ids
+  security_group_ids = [aws_security_group.idp_ecs.id]
 
   billing_tag_value = var.billing_tag_value
 
@@ -214,11 +212,9 @@ module "login_ecs" {
     }
   }]
 
-  lb_target_group_arn            = aws_lb_target_group.idp_login.arn
-  subnet_ids                     = module.idp_vpc.private_subnet_ids
-  security_group_ids             = [aws_security_group.idp_login_ecs.id]
-  service_discovery_enabled      = true
-  service_discovery_namespace_id = aws_service_discovery_private_dns_namespace.idp.id
+  lb_target_group_arn = aws_lb_target_group.idp_login.arn
+  subnet_ids          = module.idp_vpc.private_subnet_ids
+  security_group_ids  = [aws_security_group.idp_login_ecs.id]
 
   billing_tag_value = var.billing_tag_value
 
