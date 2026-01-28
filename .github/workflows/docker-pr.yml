@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - "docker/**"
-      - ".github/workflows/docker-pr.yml"
+      - ".github/workflows/docker-*"
 
 env: 
   REGISTRY_PREFIX: ${{ vars.STAGING_AWS_ACCOUNT_ID }}.dkr.ecr.ca-central-1.amazonaws.com
