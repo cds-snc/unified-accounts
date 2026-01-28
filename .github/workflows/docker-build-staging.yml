@@ -1,0 +1,77 @@
+name: Docker build and push Staging
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docker/**"
+      - ".github/workflows/docker-apply-staging.yml"
+
+env: 
+  AWS_REGION: ca-central-1
+  REGISTRY_PREFIX: ${{ vars.STAGING_AWS_ACCOUNT_ID }}.dkr.ecr.ca-central-1.amazonaws.com
+  GITHUB_SHA: ${{ github.sha }}
+
+permissions:
+  id-token: write
+  contents: write
+  
+jobs:
+  docker-push:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      matrix:
+        service:
+          - idp
+          - idp-login
+    
+    steps:
+    - name: Audit DNS requests
+      uses: cds-snc/dns-proxy-action@85118f9b128d57d13dc3cc2ee11d014658dd3e1a
+      env:
+        DNS_PROXY_FORWARDTOSENTINEL: "true"
+        DNS_PROXY_LOGANALYTICSWORKSPACEID: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+        DNS_PROXY_LOGANALYTICSSHAREDKEY: ${{ secrets.LOG_ANALYTICS_WORKSPACE_KEY }}
+  
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - name: configure aws credentials using OIDC
+      uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+      with:
+        role-to-assume: arn:aws:iam::${{ vars.STAGING_AWS_ACCOUNT_ID }}:role/unified-accounts-apply 
+        role-session-name: PushContainer
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1 
+  
+    - name: Build and push image
+      run: |
+        make cert
+        docker buildx build \
+          --push \
+          --platform linux/arm64 \
+          -t "${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:sha-$GITHUB_SHA" \
+          -t "${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:latest" \
+          -f ./docker/${{ matrix.service }}/Dockerfile \
+          ./docker/${{ matrix.service }}
+
+    - name: Generate Docker image SBOM
+      uses: cds-snc/security-tools/.github/actions/generate-sbom@34794baf2af592913bb5b51d8df4f8d0acc49b6f # v3.2.0
+      env:
+        TRIVY_DB_REPOSITORY: ${{ vars.TRIVY_DB_REPOSITORY }}
+      with:
+        docker_image: "${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:latest"
+        dockerfile_path: "./docker/${{ matrix.service }}/Dockerfile"
+        sbom_name: "${{ matrix.service }}"
+        token: "${{ secrets.GITHUB_TOKEN }}"
+        platform: "linux/arm64"

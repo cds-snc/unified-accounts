@@ -1,0 +1,65 @@
+name: Docker deploy Staging
+
+on:
+  workflow_run:
+    workflows: ["Docker build and push Staging"]
+    types:
+    - completed
+
+env: 
+  AWS_REGION: ca-central-1
+  ECS_CLUSTER: idp
+  REGISTRY_PREFIX: ${{ vars.STAGING_AWS_ACCOUNT_ID }}.dkr.ecr.ca-central-1.amazonaws.com
+  GITHUB_SHA: ${{ github.event.workflow_run.head_sha }}
+
+permissions:
+  id-token: write
+
+jobs:
+  docker-deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - idp
+          - idp-login
+    steps:
+    - name: Audit DNS requests
+      uses: cds-snc/dns-proxy-action@85118f9b128d57d13dc3cc2ee11d014658dd3e1a
+      env:
+        DNS_PROXY_FORWARDTOSENTINEL: "true"
+        DNS_PROXY_LOGANALYTICSWORKSPACEID: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+        DNS_PROXY_LOGANALYTICSSHAREDKEY: ${{ secrets.LOG_ANALYTICS_WORKSPACE_KEY }}
+
+    - name: Configure aws credentials using OIDC
+      uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+      with:
+        role-to-assume: arn:aws:iam::${{ vars.STAGING_AWS_ACCOUNT_ID }}:role/unified-accounts-apply 
+        role-session-name: DeployContainer
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Update ECS task image
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@06472d439cb66af6210a6709bfc842c26b053706 # v1.8.2
+      with:
+        task-definition-family: ${{ matrix.service }}
+        container-name: ${{ matrix.service }}
+        image: ${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:sha-${{ env.GITHUB_SHA }}
+
+    - name: Deploy updated ECS task
+      uses: aws-actions/amazon-ecs-deploy-task-definition@c6e19c08506099e50400581201a3a767fd8e3ff4 # v2.5.1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: ${{ matrix.service }}
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true
+        propagate-tags: SERVICE
+
+    - name: Update SSM parameter for deployed image
+      run: |
+        aws ssm put-parameter \
+          --name "/ecs/${{ env.ECS_CLUSTER }}/${{ matrix.service }}/container-image" \
+          --value "${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:sha-${{ env.GITHUB_SHA }}" \
+          --type "String" \
+          --overwrite

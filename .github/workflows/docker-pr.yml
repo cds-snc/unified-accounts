@@ -1,0 +1,73 @@
+
+name: Docker Pull Request
+on:
+  pull_request:
+    paths:
+      - "docker/**"
+      - ".github/workflows/docker-pr.yml"
+
+env: 
+  REGISTRY_PREFIX: ${{ vars.STAGING_AWS_ACCOUNT_ID }}.dkr.ecr.ca-central-1.amazonaws.com
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  docker-hadolint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - idp
+          - idp-login
+    steps:
+      - name: Audit DNS requests
+        uses: cds-snc/dns-proxy-action@85118f9b128d57d13dc3cc2ee11d014658dd3e1a
+        env:
+          DNS_PROXY_FORWARDTOSENTINEL: "true"
+          DNS_PROXY_LOGANALYTICSWORKSPACEID: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+          DNS_PROXY_LOGANALYTICSSHAREDKEY: ${{ secrets.LOG_ANALYTICS_WORKSPACE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Hadolint
+        uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
+        with:
+          dockerfile: ./docker/${{ matrix.service }}/Dockerfile
+
+  docker-build:
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      matrix:
+        service:
+          - idp
+          - idp-login
+    steps: 
+      - name: Audit DNS requests
+        uses: cds-snc/dns-proxy-action@85118f9b128d57d13dc3cc2ee11d014658dd3e1a
+        env:
+          DNS_PROXY_FORWARDTOSENTINEL: "true"
+          DNS_PROXY_LOGANALYTICSWORKSPACEID: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+          DNS_PROXY_LOGANALYTICSSHAREDKEY: ${{ secrets.LOG_ANALYTICS_WORKSPACE_KEY }}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Build image
+        run: |
+          make cert
+          docker buildx build \
+            --platform linux/arm64 \
+            -t "$REGISTRY_PREFIX/${{ matrix.service }}:latest" \
+            -f ./docker/${{ matrix.service }}/Dockerfile \
+            ./docker/${{ matrix.service }}
+
