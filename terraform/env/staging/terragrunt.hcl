@@ -4,6 +4,7 @@ terraform {
 
 inputs = {
   idp_cluster_capacity_provider = "FARGATE_SPOT"
+  idp_database                  = "idp"
   idp_database_instance_count   = 1
   idp_database_min_acu          = 0
   idp_database_max_acu          = 2
