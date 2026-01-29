@@ -4,8 +4,8 @@ module "schedule_shutdown" {
   source = "github.com/cds-snc/terraform-modules//schedule_shutdown?ref=v10.10.2"
 
   ecs_service_arns = [
-    module.idp_ecs.service_arn,
-    module.login_ecs.service_arn,
+    module.idp_ecs.service_id,
+    module.login_ecs.service_id,
   ]
 
   schedule_shutdown = "cron(0 22 * * ? *)"       # 10pm UTC, every day
