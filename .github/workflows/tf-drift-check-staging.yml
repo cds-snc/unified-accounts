@@ -11,7 +11,6 @@ env:
   TERRAGRUNT_VERSION: 0.98.0
   TF_VAR_idp_admin_username: ${{ secrets.STAGING_IDP_ADMIN_USERNAME }}
   TF_VAR_idp_admin_password: ${{ secrets.STAGING_IDP_ADMIN_PASSWORD }}
-  TF_VAR_idp_database: ${{ secrets.STAGING_IDP_DATABASE }}
   TF_VAR_idp_database_username: ${{ secrets.STAGING_IDP_DATABASE_USERNAME }}
   TF_VAR_idp_database_password: ${{ secrets.STAGING_IDP_DATABASE_PASSWORD }}
   TF_VAR_idp_database_admin_username: ${{ secrets.STAGING_IDP_DATABASE_ADMIN_USERNAME }}
