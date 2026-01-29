@@ -5,7 +5,7 @@ module "schedule_shutdown" {
 
   ecs_service_arns = [
     module.idp_ecs.service_arn,
-    module.idp_login_ecs.service_arn,
+    module.login_ecs.service_arn,
   ]
 
   schedule_shutdown = "cron(0 22 * * ? *)"       # 10pm UTC, every day
