@@ -2,7 +2,7 @@
 # https://zitadel.com/docs/self-hosting/manage/configure#runtime-configuration-file
 
 Log:
-  Level: info
+  Level: 'ERROR'
 
 Port: 8080
 ExternalPort: 443
@@ -45,3 +45,8 @@ OIDC:
   DefaultIdTokenLifetime: '0.5h'
   DefaultRefreshTokenIdleExpiration: '24h'
   DefaultRefreshTokenExpiration: '24h'
+
+Restrictions:
+  AllowedLanguages:
+    - 'en'
+    - 'fr'
