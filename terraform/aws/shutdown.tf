@@ -8,8 +8,8 @@ module "schedule_shutdown" {
     module.login_ecs.service_id,
   ]
 
-  schedule_shutdown = "cron(0 22 * * ? *)"       # 10pm UTC, every day
-  schedule_startup  = "cron(0 10 ? * MON-FRI *)" # 10am UTC, Monday-Friday
+  schedule_shutdown = "cron(0 23 * * ? *)"       # 11pm UTC, every day
+  schedule_startup  = "cron(0 11 ? * MON-FRI *)" # 11am UTC, Monday-Friday
 
   billing_tag_value = var.billing_tag_value
 }
