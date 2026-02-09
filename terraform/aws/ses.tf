@@ -5,14 +5,6 @@ resource "aws_ses_domain_identity" "idp" {
   domain = aws_route53_zone.idp.name
 }
 
-resource "aws_route53_record" "idp_verification_TXT" {
-  zone_id = aws_route53_zone.idp.zone_id
-  name    = "_amazonses.${aws_ses_domain_identity.idp.id}"
-  type    = "TXT"
-  ttl     = "600"
-  records = [aws_ses_domain_identity.idp.verification_token]
-}
-
 resource "aws_ses_domain_identity_verification" "ses_verif" {
   domain     = aws_ses_domain_identity.idp.id
   depends_on = [aws_route53_record.idp_verification_TXT]
