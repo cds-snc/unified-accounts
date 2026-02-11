@@ -30,7 +30,6 @@ DefaultInstance:
   LoginPolicy:
     AllowRegister: true
     ForceMFA: false
-    ForceMFALocalOnly: true
     HidePasswordReset: false
     IgnoreUnknownUsernames: true
   OIDCSettings:
