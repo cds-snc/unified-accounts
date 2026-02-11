@@ -48,6 +48,7 @@ services:
       # ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: Automatically Initialized IAM_OWNER
       # ZITADEL_FIRSTINSTANCE_ORG_MACHINE_PAT_EXPIRATIONDATE: '2029-01-01T00:00:00Z'
       
+      # Login at http://localhost:8080/ui/console?login_hint=zitadel-admin@zitadel.localhost and enter Password1!
       # To change the initial human admin users username and password, uncomment the following lines.
       # The first login name is formatted like this: <username>@<org_name>.<external_domain>
       # With the following incommented configuration, this would be root@my-organization.localhost
@@ -88,7 +89,7 @@ services:
   login:
     restart: unless-stopped
     build:
-      context: ./login
+      context: ./idp-login
       dockerfile: ./Dockerfile  
     environment:
       - ZITADEL_API_URL=http://localhost:8080

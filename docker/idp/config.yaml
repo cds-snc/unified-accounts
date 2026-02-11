@@ -28,9 +28,10 @@ Database:
 
 DefaultInstance:
   LoginPolicy:
-    AllowRegister: false
-    ForceMFA: true
-    HidePasswordReset: true
+    AllowRegister: true
+    ForceMFA: false
+    HidePasswordReset: false
+    IgnoreUnknownUsernames: true
   OIDCSettings:
     AccessTokenLifetime: '0.5h'
     IdTokenLifetime: '0.5h'
