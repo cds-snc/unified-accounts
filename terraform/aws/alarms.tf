@@ -28,7 +28,7 @@ locals {
     module.idp_ecs
   ]
   lb_target_groups = merge(
-    { for key, value in aws_lb_target_group.idp : "idp_${lower(key)}" => value },
+    { for key, value in aws_lb_target_group.idp : "idp-${lower(key)}" => value },
     { idp_login = aws_lb_target_group.idp_login }
   )
   error_logged_metric_patterns = {
