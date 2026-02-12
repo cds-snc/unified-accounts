@@ -8,6 +8,11 @@ module "schedule_shutdown" {
     module.login_ecs.service_id,
   ]
 
+  cloudwatch_alarm_arns = concat(
+    [for alarm in aws_cloudwatch_metric_alarm.idp_load_balancer_unhealthy_hosts : alarm.arn],
+    [for alarm in aws_cloudwatch_metric_alarm.idp_load_balancer_healthy_hosts : alarm.arn]
+  )
+
   schedule_shutdown = "cron(0 23 * * ? *)"       # 11pm UTC, every day
   schedule_startup  = "cron(0 11 ? * MON-FRI *)" # 11am UTC, Monday-Friday
 
