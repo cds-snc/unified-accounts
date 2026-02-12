@@ -184,3 +184,32 @@ resource "aws_alb_listener_rule" "idp_protocol_version" {
 
   tags = local.common_tags
 }
+
+# Serve security.txt as a fixed response from the ALB
+resource "aws_alb_listener_rule" "security_txt" {
+  listener_arn = aws_lb_listener.idp.arn
+  priority     = 999
+
+  action {
+    type = "fixed-response"
+
+    fixed_response {
+      content_type = "text/plain"
+      message_body = <<-EOT
+        Contact: mailto:cds.security-securite.snc@servicecanada.gc.ca
+        Canonical: https://cdssandbox.xyz/.well-known/security.txt
+        Expires: 2026-03-31T23:59:59Z
+        Preferred-Languages: en, fr
+      EOT
+      status_code  = "200"
+    }
+  }
+
+  condition {
+    path_pattern {
+      values = ["/.well-known/security.txt"]
+    }
+  }
+
+  tags = local.common_tags
+}
