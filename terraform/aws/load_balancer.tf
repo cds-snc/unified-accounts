@@ -152,9 +152,10 @@ resource "aws_alb_listener_rule" "security_txt" {
     fixed_response {
       content_type = "text/plain"
       message_body = <<-EOT
-        Contact: mailto:cds.security-securite.snc@servicecanada.gc.ca
-        Canonical: https://cdssandbox.xyz/.well-known/security.txt
-        Expires: 2026-03-31T23:59:59Z
+        Contact: mailto:ZZTBSCYBERS@tbs-sct.gc.ca
+        Contact: https://hackerone.com/tbs-sct/
+        Canonical: https://${var.domain_root}/.well-known/security.txt
+        Expires: 2026-03-02T12:00:00.000Z
         Preferred-Languages: en, fr
       EOT
       status_code  = "200"

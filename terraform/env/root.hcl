@@ -8,6 +8,7 @@ inputs = {
   billing_tag_value         = local.billing_tag_value
   cbs_satellite_bucket_name = "cbs-satellite-${local.env_vars.inputs.account_id}"
   domain                    = local.env_vars.inputs.domain
+  domain_root               = join(".", reverse(slice(reverse(split(".", local.env_vars.inputs.domain)), 0, 2)))
   env                       = local.env_vars.inputs.env
   product_name              = local.env_vars.inputs.product_name
   region                    = local.env_vars.inputs.region

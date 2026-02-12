@@ -24,6 +24,11 @@ variable "domain" {
   type        = string
 }
 
+variable "domain_root" {
+  description = "The root domain to use for the service."
+  type        = string
+}
+
 variable "env" {
   description = "The current running environment"
   type        = string
