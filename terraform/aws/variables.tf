@@ -13,6 +13,12 @@ variable "cbs_satellite_bucket_name" {
   type        = string
 }
 
+variable "cloudwatch_slack_webhook_url" {
+  description = "The Slack webhook URL for CloudWatch alerts."
+  type        = string
+  sensitive   = true
+}
+
 variable "domain" {
   description = "The domain to use for the service."
   type        = string

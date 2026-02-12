@@ -1,0 +1,273 @@
+locals {
+  # IdP errors
+  idp_error_filters = [
+    "level=error"
+  ]
+  idp_error_metric_pattern = "[(w=\"*${join("*\" || w=\"*", local.idp_error_filters)}*\")]"
+
+  # IdP Login errors
+  idp_login_error_filters = [
+    "Error"
+  ]
+  idp_login_skip_filters = [
+    "not_found",
+    "already_exists",
+    "failed_precondition",
+    "permission_denied",
+    "invalid_argument"
+  ]
+  idp_login_error_metric_pattern = "[(w=\"*${join("*\" || w=\"*", local.idp_login_error_filters)}*\") && w!=\"*${join("*\" && w!=\"*", local.idp_login_skip_filters)}*\"]"
+
+  # ECS and ALB thresholds
+  threshold_ecs_high_cpu     = 80
+  threshold_ecs_high_memory  = 80
+  threshold_lb_response_time = 1
+
+  ecs_services = [
+    module.login_ecs,
+    module.idp_ecs
+  ]
+  lb_target_groups = merge(
+    { for key, value in aws_lb_target_group.idp : "idp_${lower(key)}" => value },
+    { idp_login = aws_lb_target_group.idp_login }
+  )
+  error_logged_metric_patterns = {
+    idp = {
+      error_filters  = local.idp_error_filters
+      pattern        = local.idp_error_metric_pattern
+      log_group_name = module.idp_ecs.cloudwatch_log_group_name
+    }
+    idp_login = {
+      error_filters  = local.idp_login_error_filters
+      pattern        = local.idp_login_error_metric_pattern
+      log_group_name = module.login_ecs.cloudwatch_log_group_name
+    }
+  }
+}
+
+#
+# ECS resource use
+#
+resource "aws_cloudwatch_metric_alarm" "idp_ecs_high_cpu" {
+  for_each = { for service in local.ecs_services : service.service_name => service }
+
+  alarm_name          = "${each.key}-high-cpu"
+  alarm_description   = "`${each.key}` high CPU use over 5 minutes."
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "5"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = "60"
+  statistic           = "Maximum"
+  threshold           = local.threshold_ecs_high_cpu
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = [aws_sns_topic.cloudwatch_alert_warning.arn]
+  ok_actions    = [aws_sns_topic.cloudwatch_alert_ok.arn]
+
+  dimensions = {
+    ClusterName = module.idp_ecs.cluster_name
+    ServiceName = each.key
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "idp_ecs_high_memory" {
+  for_each = { for service in local.ecs_services : service.service_name => service }
+
+  alarm_name          = "${each.key}-high-memory"
+  alarm_description   = "`${each.key}` high memory use over 5 minutes."
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "5"
+  metric_name         = "MemoryUtilization"
+  namespace           = "AWS/ECS"
+  period              = "60"
+  statistic           = "Maximum"
+  threshold           = local.threshold_ecs_high_memory
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = [aws_sns_topic.cloudwatch_alert_warning.arn]
+  ok_actions    = [aws_sns_topic.cloudwatch_alert_ok.arn]
+
+  dimensions = {
+    ClusterName = module.idp_ecs.cluster_name
+    ServiceName = each.key
+  }
+
+  tags = local.common_tags
+}
+
+#
+# Load balancer
+#
+resource "aws_cloudwatch_metric_alarm" "idp_load_balancer_unhealthy_hosts" {
+  for_each = local.lb_target_groups
+
+  alarm_name          = "${each.key}-load-balancer-unhealthy-hosts"
+  alarm_description   = "There are unhealthy ${each.key} target group hosts in a 1 minute period."
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  threshold           = "1"
+  evaluation_periods  = "1"
+  metric_name         = "UnHealthyHostCount"
+  namespace           = "AWS/ApplicationELB"
+  period              = "60"
+  statistic           = "Maximum"
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = [aws_sns_topic.cloudwatch_alert_warning.arn]
+  ok_actions    = [aws_sns_topic.cloudwatch_alert_ok.arn]
+
+  dimensions = {
+    LoadBalancer = aws_lb.idp.arn_suffix
+    TargetGroup  = each.value.arn_suffix
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "idp_load_balancer_healthy_hosts" {
+  for_each = local.lb_target_groups
+
+  alarm_name          = "${each.key}-load-balancer-healthy-hosts"
+  alarm_description   = "There are no healthy hosts for the ${each.key} target group in a 1 minute period."
+  comparison_operator = "LessThanThreshold"
+  threshold           = "1"
+  evaluation_periods  = "1"
+  metric_name         = "HealthyHostCount"
+  namespace           = "AWS/ApplicationELB"
+  period              = "60"
+  statistic           = "Maximum"
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = [aws_sns_topic.cloudwatch_alert_warning.arn]
+  ok_actions    = [aws_sns_topic.cloudwatch_alert_ok.arn]
+
+  dimensions = {
+    LoadBalancer = aws_lb.idp.arn_suffix
+    TargetGroup  = each.value.arn_suffix
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "idp_load_balancer_response_time" {
+  for_each = local.lb_target_groups
+
+  alarm_name          = "${each.key}-load-balancer-response-time"
+  alarm_description   = "Response time for the ${each.key} target group is consistently over 1 second over 5 minutes."
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "5"
+  datapoints_to_alarm = "4"
+  threshold           = local.threshold_lb_response_time
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = [aws_sns_topic.cloudwatch_alert_warning.arn]
+  ok_actions    = [aws_sns_topic.cloudwatch_alert_ok.arn]
+
+  metric_query {
+    id          = "response_time"
+    return_data = "true"
+    metric {
+      metric_name = "TargetResponseTime"
+      namespace   = "AWS/ApplicationELB"
+      period      = "60"
+      stat        = "Average"
+      dimensions = {
+        LoadBalancer = aws_lb.idp.arn_suffix
+        TargetGroup  = each.value.arn_suffix
+      }
+    }
+  }
+
+  tags = local.common_tags
+}
+
+#
+# Errors logged
+#
+resource "aws_cloudwatch_log_metric_filter" "error_logged" {
+  for_each = local.error_logged_metric_patterns
+
+  name           = "${each.key}-error-logged"
+  pattern        = each.value.pattern
+  log_group_name = each.value.log_group_name
+
+  metric_transformation {
+    name          = "${each.key}-error-logged"
+    namespace     = "idp"
+    value         = "1"
+    default_value = "0"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "error_logged" {
+  for_each = local.error_logged_metric_patterns
+
+  alarm_name          = "${each.key}-error-logged"
+  alarm_description   = "`${each.key}` errors logged over 1 minute."
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = aws_cloudwatch_log_metric_filter.error_logged[each.key].metric_transformation[0].name
+  namespace           = aws_cloudwatch_log_metric_filter.error_logged[each.key].metric_transformation[0].namespace
+  period              = "60"
+  statistic           = "Sum"
+  threshold           = "0"
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = [aws_sns_topic.cloudwatch_alert_warning.arn]
+  ok_actions    = [aws_sns_topic.cloudwatch_alert_ok.arn]
+
+  tags = local.common_tags
+}
+
+#
+# SES bounces and complaints
+#
+resource "aws_cloudwatch_metric_alarm" "ses_bounce_rate_high" {
+  alarm_name          = "ses-bounce-rate-high"
+  alarm_description   = "SES Warning - bounce rate >=7% over the last 12 hours"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Reputation.BounceRate"
+  namespace           = "AWS/SES"
+  period              = 60 * 60 * 12
+  statistic           = "Average"
+  threshold           = 7 / 100
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = [aws_sns_topic.cloudwatch_alert_warning.arn]
+  ok_actions    = [aws_sns_topic.cloudwatch_alert_ok.arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "ses_complaint_rate_high" {
+  alarm_name          = "ses-complaint-rate-high"
+  alarm_description   = "SES Warning - complaint rate >=0.4% over the last 12 hours"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "Reputation.ComplaintRate"
+  namespace           = "AWS/SES"
+  period              = 60 * 60 * 12
+  statistic           = "Average"
+  threshold           = 0.4 / 100
+  treat_missing_data  = "notBreaching"
+
+  alarm_actions = [aws_sns_topic.cloudwatch_alert_warning.arn]
+  ok_actions    = [aws_sns_topic.cloudwatch_alert_ok.arn]
+}
+
+#
+# Log Insight queries
+#
+resource "aws_cloudwatch_query_definition" "ecs_errors" {
+  for_each = local.error_logged_metric_patterns
+
+  name            = "${each.key} errors"
+  log_group_names = [each.value.log_group_name]
+  query_string    = <<-QUERY
+    fields @timestamp, @message, @logStream
+    | filter @message like /${join("|", each.value.error_filters)}/
+    | sort @timestamp desc
+    | limit 100
+  QUERY
+}
