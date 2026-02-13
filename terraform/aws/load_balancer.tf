@@ -184,3 +184,27 @@ resource "aws_alb_listener_rule" "idp_protocol_version" {
 
   tags = local.common_tags
 }
+
+# Serve security.txt as a fixed response from the ALB
+resource "aws_alb_listener_rule" "security_txt" {
+  listener_arn = aws_lb_listener.idp.arn
+  priority     = 150
+
+  action {
+    type = "fixed-response"
+
+    fixed_response {
+      content_type = "text/plain"
+      message_body = var.security_txt_content
+      status_code  = "200"
+    }
+  }
+
+  condition {
+    path_pattern {
+      values = ["/.well-known/security.txt"]
+    }
+  }
+
+  tags = local.common_tags
+}

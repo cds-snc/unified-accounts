@@ -162,3 +162,8 @@ variable "idp_task_min_capacity" {
   description = "The minimum autoscaling capacity for IdP ECS tasks."
   type        = number
 }
+
+variable "security_txt_content" {
+  description = "The content of the /.well-known/security.txt response."
+  type        = string
+}
