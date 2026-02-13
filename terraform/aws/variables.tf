@@ -24,11 +24,6 @@ variable "domain" {
   type        = string
 }
 
-variable "domain_root" {
-  description = "The root domain to use for the service."
-  type        = string
-}
-
 variable "env" {
   description = "The current running environment"
   type        = string
@@ -166,4 +161,9 @@ variable "idp_task_memory" {
 variable "idp_task_min_capacity" {
   description = "The minimum autoscaling capacity for IdP ECS tasks."
   type        = number
+}
+
+variable "security_txt_content" {
+  description = "The content of the /.well-known/security.txt response."
+  type        = string
 }
