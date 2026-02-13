@@ -1,4 +1,9 @@
 name: Terraform Plan Staging
+
+concurrency:
+  group: terraform-staging
+  cancel-in-progress: false
+
 on:
   pull_request:
     paths:
@@ -16,6 +21,7 @@ env:
   TRUFFLEHOG_VERSION: 3.90.12
   TF_VAR_idp_admin_username: ${{ secrets.STAGING_IDP_ADMIN_USERNAME }}
   TF_VAR_idp_admin_password: ${{ secrets.STAGING_IDP_ADMIN_PASSWORD }}
+  TF_VAR_cloudwatch_slack_webhook_url: ${{ secrets.STAGING_CLOUDWATCH_ALERT_SLACK_WEBHOOK }}
   TF_VAR_idp_database_username: ${{ secrets.STAGING_IDP_DATABASE_USERNAME }}
   TF_VAR_idp_database_password: ${{ secrets.STAGING_IDP_DATABASE_PASSWORD }}
   TF_VAR_idp_database_admin_username: ${{ secrets.STAGING_IDP_DATABASE_ADMIN_USERNAME }}
