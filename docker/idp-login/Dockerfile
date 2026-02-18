@@ -1,4 +1,4 @@
-FROM ghcr.io/zitadel/zitadel-login:v4.10.1@sha256:becc59cc9fc242779e225737a6b7c9e34a6c09a217e8ccfe0031b42ae4d0e26c
+FROM ghcr.io/zitadel/zitadel-login:v4.11.0@sha256:88b3597a6b43eb438667e2d55a5cc80ec391e47d22eef8442927f4658922b32f
 
 USER root
 
