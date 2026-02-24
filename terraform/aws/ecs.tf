@@ -63,7 +63,6 @@ locals {
       "valueFrom" = aws_ssm_parameter.idp_secret_key.arn
     },
   ]
-
   login_container_env = [
     {
       "name"  = "ZITADEL_API_URL",
@@ -74,13 +73,15 @@ locals {
       "value" = "/ui/v2/login"
     },
     {
-      "name"  = "ZITADEL_SERVICE_USER_TOKEN_FILE",
-      "value" = "/idp/login-client.pat"
-    },
-    {
       "name"  = "CUSTOM_REQUEST_HEADERS",
       "value" = "Host:${var.domain}"
     },
+  ]
+  login_container_secrets = [
+    {
+      "name"      = "ZITADEL_SERVICE_USER_TOKEN",
+      "valueFrom" = aws_ssm_parameter.idp_loginclient_pat.arn
+    }
   ]
 }
 
@@ -180,6 +181,7 @@ module "login_ecs" {
   container_host_port                 = 3000
   container_port                      = 3000
   container_environment               = local.login_container_env
+  container_secrets                   = local.login_container_secrets
   container_read_only_root_filesystem = false
 
   task_exec_role_policy_documents = [
@@ -244,6 +246,7 @@ data "aws_iam_policy_document" "ecs_task_ssm_parameters" {
       aws_ssm_parameter.idp_database_admin_username.arn,
       aws_ssm_parameter.idp_database_admin_password.arn,
       aws_ssm_parameter.idp_loginclient_machine_username.arn,
+      aws_ssm_parameter.idp_loginclient_pat.arn,
       aws_ssm_parameter.idp_secret_key.arn
     ]
   }
@@ -305,5 +308,12 @@ resource "aws_ssm_parameter" "idp_loginclient_machine_username" {
   name  = "idp_loginclient_machine_username"
   type  = "SecureString"
   value = var.idp_loginclient_machine_username
+  tags  = local.common_tags
+}
+
+resource "aws_ssm_parameter" "idp_loginclient_pat" {
+  name  = "idp_loginclient_pat"
+  type  = "SecureString"
+  value = var.idp_loginclient_pat
   tags  = local.common_tags
 }
