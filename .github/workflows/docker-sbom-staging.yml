@@ -1,25 +1,21 @@
-name: Docker build and push Staging
+name: Docker SBOM Staging
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "docker/**"
-      - ".github/workflows/docker-build-staging.yml"
+  workflow_run:
+    workflows: ["Docker build and push Staging"]
+    types:
+    - completed
+
 
 env: 
-  AWS_REGION: ca-central-1
   REGISTRY_PREFIX: ${{ vars.STAGING_AWS_ACCOUNT_ID }}.dkr.ecr.ca-central-1.amazonaws.com
-  GITHUB_SHA: ${{ github.sha }}
 
 permissions:
-  id-token: write
   contents: write
   
 jobs:
-  docker-push:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  docker-sbom:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-24.04-arm
     strategy:
       matrix:
@@ -43,24 +39,22 @@ jobs:
       with:
         persist-credentials: false
 
-    - name: configure aws credentials using OIDC
-      uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
-      with:
-        role-to-assume: arn:aws:iam::${{ vars.STAGING_AWS_ACCOUNT_ID }}:role/unified-accounts-apply 
-        role-session-name: PushContainer
-        aws-region: ${{ env.AWS_REGION }}
-
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1 
-  
     - name: Build and push image
       run: |
         make cert
         docker buildx build \
-          --push \
           --platform linux/arm64 \
-          -t "${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:sha-$GITHUB_SHA" \
           -t "${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:latest" \
           -f ./docker/${{ matrix.service }}/Dockerfile \
           ./docker/${{ matrix.service }}
+
+    - name: Generate Docker image SBOM
+      uses: cds-snc/security-tools/.github/actions/generate-sbom@12a0cdea1c5a515dfcbe353693db804a1793c0ed # v4.0.1
+      env:
+        TRIVY_DB_REPOSITORY: ${{ vars.TRIVY_DB_REPOSITORY }}
+      with:
+        docker_image: "${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:latest"
+        dockerfile_path: "./docker/${{ matrix.service }}/Dockerfile"
+        sbom_name: "${{ matrix.service }}"
+        token: "${{ secrets.GITHUB_TOKEN }}"
+        platform: "linux/arm64"
