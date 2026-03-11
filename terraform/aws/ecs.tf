@@ -77,7 +77,7 @@ locals {
       "value" = "Host:${var.domain}"
     },
     {
-      "name" = "EMAIL_VERFICATION",
+      "name"  = "EMAIL_VERFICATION",
       "value" = "true"
     }
   ]
@@ -87,15 +87,15 @@ locals {
       "valueFrom" = aws_ssm_parameter.idp_loginclient_pat.arn
     },
     {
-      "name" = "ZITADEL_ORGANIZATION",
+      "name"      = "ZITADEL_ORGANIZATION",
       "valueFrom" = aws_ssm_parameter.idp_database_org.arn
     },
     {
-      "name" = "NOTIFY_API_KEY",
+      "name"      = "NOTIFY_API_KEY",
       "valueFrom" = aws_ssm_parameter.idp_database_notify_api_key.arn
     },
     {
-      "name" = "TEMPLATE_ID",
+      "name"      = "TEMPLATE_ID",
       "valueFrom" = aws_ssm_parameter.idp_database_template_id.arn
     }
   ]
@@ -337,23 +337,23 @@ resource "aws_ssm_parameter" "idp_loginclient_pat" {
 }
 
 resource "aws_ssm_parameter" "idp_database_org" {
-  name = "idp_database_org"
-  type = "SecureString"
+  name  = "idp_database_org"
+  type  = "SecureString"
   value = var.idp_database_org
-  tags = local.common_tags
+  tags  = local.common_tags
 }
 
 resource "aws_ssm_parameter" "idp_database_notify_api_key" {
-  name = "idp_database_notify_api_key"
-  type = "SecureString"
+  name  = "idp_database_notify_api_key"
+  type  = "SecureString"
   value = var.idp_database_notify_api_key
-  tags = local.common_tags
+  tags  = local.common_tags
 
 }
 
 resource "aws_ssm_parameter" "idp_database_template_id" {
-  name = "idp_database_template_id"
-  type = "SecureString"
+  name  = "idp_database_template_id"
+  type  = "SecureString"
   value = var.idp_database_template_id
-  tags = local.common_tags
+  tags  = local.common_tags
 }
