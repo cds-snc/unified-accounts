@@ -81,6 +81,18 @@ locals {
     {
       "name"      = "ZITADEL_SERVICE_USER_TOKEN",
       "valueFrom" = aws_ssm_parameter.idp_loginclient_pat.arn
+    },
+    {
+      "name" = "ZITADEL_ORGANIZATION",
+      "valueFrom" = aws_ssm_parameter.idp_database_org.arn
+    },
+    {
+      "name" = "NOTIFY_API_KEY",
+      "valueFrom" = aws_ssm_parameter.idp_database_notify_api_key.arn
+    },
+    {
+      "name" = "TEMPLATE_ID",
+      "valueFrom" = aws_ssm_parameter.idp_database_template_id.arn
     }
   ]
 }
@@ -247,7 +259,10 @@ data "aws_iam_policy_document" "ecs_task_ssm_parameters" {
       aws_ssm_parameter.idp_database_admin_password.arn,
       aws_ssm_parameter.idp_loginclient_machine_username.arn,
       aws_ssm_parameter.idp_loginclient_pat.arn,
-      aws_ssm_parameter.idp_secret_key.arn
+      aws_ssm_parameter.idp_secret_key.arn,
+      aws_ssm_parameter.idp_database_org.arn,
+      aws_ssm_parameter.idp_database_notify_api_key.arn,
+      aws_ssm_parameter.idp_database_template_id.arn,
     ]
   }
 }
@@ -310,10 +325,31 @@ resource "aws_ssm_parameter" "idp_loginclient_machine_username" {
   value = var.idp_loginclient_machine_username
   tags  = local.common_tags
 }
-
 resource "aws_ssm_parameter" "idp_loginclient_pat" {
   name  = "idp_loginclient_pat"
   type  = "SecureString"
   value = var.idp_loginclient_pat
   tags  = local.common_tags
+}
+
+resource "aws_ssm_parameter" "idp_database_org" {
+  name = "idp_database_org"
+  type = "SecureString"
+  value = var.idp_database_org
+  tags = local.common_tags
+}
+
+resource "aws_ssm_parameter" "idp_database_notify_api_key" {
+  name = "idp_database_notify_api_key"
+  type = "SecureString"
+  value = var.idp_database_notify_api_key
+  tags = local.common_tags
+
+}
+
+resource "aws_ssm_parameter" "idp_database_template_id" {
+  name = "idp_database_template_id"
+  type = "SecureString"
+  value = var.idp_database_template_id
+  tags = local.common_tags
 }

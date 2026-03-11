@@ -21,11 +21,6 @@ jobs:
   docker-push:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-24.04-arm
-    strategy:
-      matrix:
-        service:
-          - idp
-          - idp-login
     
     steps:
     - name: Audit DNS requests
@@ -60,7 +55,7 @@ jobs:
         docker buildx build \
           --push \
           --platform linux/arm64 \
-          -t "${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:sha-$GITHUB_SHA" \
-          -t "${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:latest" \
-          -f ./docker/${{ matrix.service }}/Dockerfile \
-          ./docker/${{ matrix.service }}
+          -t "${{ env.REGISTRY_PREFIX }}/idp:sha-$GITHUB_SHA" \
+          -t "${{ env.REGISTRY_PREFIX }}/idp:latest" \
+          -f ./docker/idp/Dockerfile \
+          ./docker/idp

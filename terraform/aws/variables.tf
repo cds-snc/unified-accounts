@@ -113,6 +113,24 @@ variable "idp_loginclient_pat" {
   sensitive   = true
 }
 
+variable "idp_database_org" {
+  description = "The IdP organization name for the database."
+  type        = string
+  sensitive   = true
+}
+
+variable "idp_database_notify_api_key" {
+  description = "The API key for the notification service used by the IdP database."
+  type        = string
+  sensitive   = true
+}
+
+variable "idp_database_template_id" {
+  description = "The template ID for the notification service used by the IdP database."
+  type        = string
+  sensitive   = true
+}
+
 variable "idp_login_task_cpu" {
   description = "The CPU units for the idp login ECS task."
   type        = number
