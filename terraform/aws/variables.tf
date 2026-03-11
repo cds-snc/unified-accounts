@@ -113,19 +113,19 @@ variable "idp_loginclient_pat" {
   sensitive   = true
 }
 
-variable "idp_database_org" {
+variable "idp_zitadel_org" {
   description = "The IdP organization name for the database."
   type        = string
   sensitive   = true
 }
 
-variable "idp_database_notify_api_key" {
+variable "idp_notify_api_key" {
   description = "The API key for the notification service used by the IdP database."
   type        = string
   sensitive   = true
 }
 
-variable "idp_database_template_id" {
+variable "idp_notify_template_id" {
   description = "The template ID for the notification service used by the IdP database."
   type        = string
   sensitive   = true

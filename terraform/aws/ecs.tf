@@ -88,15 +88,15 @@ locals {
     },
     {
       "name"      = "ZITADEL_ORGANIZATION",
-      "valueFrom" = aws_ssm_parameter.idp_database_org.arn
+      "valueFrom" = aws_ssm_parameter.idp_zitadel_org.arn
     },
     {
       "name"      = "NOTIFY_API_KEY",
-      "valueFrom" = aws_ssm_parameter.idp_database_notify_api_key.arn
+      "valueFrom" = aws_ssm_parameter.idp_notify_api_key.arn
     },
     {
       "name"      = "TEMPLATE_ID",
-      "valueFrom" = aws_ssm_parameter.idp_database_template_id.arn
+      "valueFrom" = aws_ssm_parameter.idp_notify_template_id.arn
     }
   ]
 }
@@ -264,9 +264,9 @@ data "aws_iam_policy_document" "ecs_task_ssm_parameters" {
       aws_ssm_parameter.idp_loginclient_machine_username.arn,
       aws_ssm_parameter.idp_loginclient_pat.arn,
       aws_ssm_parameter.idp_secret_key.arn,
-      aws_ssm_parameter.idp_database_org.arn,
-      aws_ssm_parameter.idp_database_notify_api_key.arn,
-      aws_ssm_parameter.idp_database_template_id.arn,
+      aws_ssm_parameter.idp_zitadel_org.arn,
+      aws_ssm_parameter.idp_notify_api_key.arn,
+      aws_ssm_parameter.idp_notify_template_id.arn,
     ]
   }
 }
@@ -336,24 +336,24 @@ resource "aws_ssm_parameter" "idp_loginclient_pat" {
   tags  = local.common_tags
 }
 
-resource "aws_ssm_parameter" "idp_database_org" {
-  name  = "idp_database_org"
+resource "aws_ssm_parameter" "idp_zitadel_org" {
+  name  = "idp_zitadel_org"
   type  = "SecureString"
-  value = var.idp_database_org
+  value = var.idp_zitadel_org
   tags  = local.common_tags
 }
 
-resource "aws_ssm_parameter" "idp_database_notify_api_key" {
-  name  = "idp_database_notify_api_key"
+resource "aws_ssm_parameter" "idp_notify_api_key" {
+  name  = "idp_notify_api_key"
   type  = "SecureString"
-  value = var.idp_database_notify_api_key
+  value = var.idp_notify_api_key
   tags  = local.common_tags
 
 }
 
-resource "aws_ssm_parameter" "idp_database_template_id" {
-  name  = "idp_database_template_id"
+resource "aws_ssm_parameter" "idp_notify_template_id" {
+  name  = "idp_notify_template_id"
   type  = "SecureString"
-  value = var.idp_database_template_id
+  value = var.idp_notify_template_id
   tags  = local.common_tags
 }

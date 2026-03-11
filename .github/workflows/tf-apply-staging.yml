@@ -28,9 +28,9 @@ env:
   TF_VAR_idp_database_admin_password: ${{ secrets.STAGING_IDP_DATABASE_ADMIN_PASSWORD }}
   TF_VAR_idp_loginclient_machine_username: ${{ secrets.STAGING_IDP_LOGINCLIENT_MACHINE_USERNAME }}
   TF_VAR_idp_loginclient_pat: ${{ secrets.STAGING_IDP_LOGINCLIENT_PAT }}
-  TF_VAR_idp_database_org: ${{ secrets.STAGING_IDP_DATABASE_ORG }}
-  TF_VAR_idp_database_notify_api_key: ${{ secrets.STAGING_IDP_DATABASE_NOTIFY_API_KEY }}
-  TF_VAR_idp_database_template_id: ${{ secrets.STAGING_IDP_DATABASE_TEMPLATE_ID }}
+  TF_VAR_idp_zitadel_org: ${{ secrets.STAGING_IDP_ZITADEL_ORG }}
+  TF_VAR_idp_notify_api_key: ${{ secrets.STAGING_IDP_NOTIFY_API_KEY }}
+  TF_VAR_idp_notify_template_id: ${{ secrets.STAGING_IDP_NOTIFY_TEMPLATE_ID }}
   TF_VAR_idp_secret_key: ${{ secrets.STAGING_IDP_SECRET_KEY }}
   TF_VAR_security_txt_content: ${{ vars.SECURITY_TXT_CDSSANDBOX_XYZ }}
 
