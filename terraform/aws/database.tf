@@ -94,25 +94,3 @@ resource "aws_ssm_parameter" "idp_database_admin_password" {
   value = var.idp_database_admin_password
   tags  = local.common_tags
 }
-
-resource "aws_ssm_parameter" "idp_database_org" {
-  name  = "idp_database_org"
-  type  = "SecureString"
-  value = var.idp_database_org
-  tags  = local.common_tags
-}
-
-resource "aws_ssm_parameter" "idp_database_notify_api_key" {
-  name  = "idp_database_notify_api_key"
-  type  = "SecureString"
-  value = var.idp_database_notify_api_key
-  tags  = local.common_tags
-
-}
-
-resource "aws_ssm_parameter" "idp_database_template_id" {
-  name  = "idp_database_template_id"
-  type  = "SecureString"
-  value = var.idp_database_template_id
-  tags  = local.common_tags
-}
