@@ -76,11 +76,27 @@ locals {
       "name"  = "CUSTOM_REQUEST_HEADERS",
       "value" = "Host:${var.domain}"
     },
+    {
+      "name"  = "EMAIL_VERIFICATION",
+      "value" = "true"
+    }
   ]
   login_container_secrets = [
     {
       "name"      = "ZITADEL_SERVICE_USER_TOKEN",
       "valueFrom" = aws_ssm_parameter.idp_loginclient_pat.arn
+    },
+    {
+      "name"      = "ZITADEL_ORGANIZATION",
+      "valueFrom" = aws_ssm_parameter.idp_zitadel_org.arn
+    },
+    {
+      "name"      = "NOTIFY_API_KEY",
+      "valueFrom" = aws_ssm_parameter.idp_notify_api_key.arn
+    },
+    {
+      "name"      = "TEMPLATE_ID",
+      "valueFrom" = aws_ssm_parameter.idp_notify_template_id.arn
     }
   ]
 }
@@ -247,7 +263,10 @@ data "aws_iam_policy_document" "ecs_task_ssm_parameters" {
       aws_ssm_parameter.idp_database_admin_password.arn,
       aws_ssm_parameter.idp_loginclient_machine_username.arn,
       aws_ssm_parameter.idp_loginclient_pat.arn,
-      aws_ssm_parameter.idp_secret_key.arn
+      aws_ssm_parameter.idp_secret_key.arn,
+      aws_ssm_parameter.idp_zitadel_org.arn,
+      aws_ssm_parameter.idp_notify_api_key.arn,
+      aws_ssm_parameter.idp_notify_template_id.arn,
     ]
   }
 }
@@ -310,10 +329,30 @@ resource "aws_ssm_parameter" "idp_loginclient_machine_username" {
   value = var.idp_loginclient_machine_username
   tags  = local.common_tags
 }
-
 resource "aws_ssm_parameter" "idp_loginclient_pat" {
   name  = "idp_loginclient_pat"
   type  = "SecureString"
   value = var.idp_loginclient_pat
+  tags  = local.common_tags
+}
+
+resource "aws_ssm_parameter" "idp_zitadel_org" {
+  name  = "idp_zitadel_org"
+  type  = "SecureString"
+  value = var.idp_zitadel_org
+  tags  = local.common_tags
+}
+
+resource "aws_ssm_parameter" "idp_notify_api_key" {
+  name  = "idp_notify_api_key"
+  type  = "SecureString"
+  value = var.idp_notify_api_key
+  tags  = local.common_tags
+}
+
+resource "aws_ssm_parameter" "idp_notify_template_id" {
+  name  = "idp_notify_template_id"
+  type  = "SecureString"
+  value = var.idp_notify_template_id
   tags  = local.common_tags
 }

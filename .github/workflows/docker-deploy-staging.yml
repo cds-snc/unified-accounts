@@ -19,11 +19,6 @@ jobs:
   docker-deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service:
-          - idp
-          - idp-login
     steps:
     - name: Audit DNS requests
       uses: cds-snc/dns-proxy-action@f0796e7f3d6bec5d40aecb0321ed8012f5602f84
@@ -43,15 +38,15 @@ jobs:
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@6b89923a897d41e9ad789181d8865b532ecf973c # v1.8.3
       with:
-        task-definition-family: ${{ matrix.service }}
-        container-name: ${{ matrix.service }}
-        image: ${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:sha-${{ env.GITHUB_SHA }}
+        task-definition-family: idp
+        container-name: idp
+        image: ${{ env.REGISTRY_PREFIX }}/idp:sha-${{ env.GITHUB_SHA }}
 
     - name: Deploy updated ECS task
       uses: aws-actions/amazon-ecs-deploy-task-definition@cbf54ec46642b86ff78c2f5793da6746954cf8ff # v2.6.0
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: ${{ matrix.service }}
+        service: idp
         cluster: ${{ env.ECS_CLUSTER }}
         wait-for-service-stability: true
         propagate-tags: SERVICE
@@ -59,7 +54,7 @@ jobs:
     - name: Update SSM parameter for deployed image
       run: |
         aws ssm put-parameter \
-          --name "/ecs/${{ env.ECS_CLUSTER }}/${{ matrix.service }}/container-image" \
-          --value "${{ env.REGISTRY_PREFIX }}/${{ matrix.service }}:sha-${{ env.GITHUB_SHA }}" \
+          --name "/ecs/${{ env.ECS_CLUSTER }}/idp/container-image" \
+          --value "${{ env.REGISTRY_PREFIX }}/idp:sha-${{ env.GITHUB_SHA }}" \
           --type "String" \
           --overwrite
