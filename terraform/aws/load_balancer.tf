@@ -38,7 +38,7 @@ resource "random_string" "alb_idp_login_tg_suffix" {
   keepers = {
     port     = 3000
     protocol = "HTTP"
-    path     = "/ui/v2/login/healthy"
+    path     = "/ui/v2/healthy"
   }
 }
 
@@ -85,7 +85,7 @@ resource "aws_lb_target_group" "idp_login" {
   health_check {
     enabled  = true
     protocol = "HTTP"
-    path     = "/ui/v2/login/healthy"
+    path     = "/ui/v2/healthy"
     matcher  = "200-399"
   }
 
