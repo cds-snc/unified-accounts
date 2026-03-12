@@ -70,7 +70,7 @@ locals {
     },
     {
       "name"  = "NEXT_PUBLIC_BASE_PATH",
-      "value" = "/ui/v2/login"
+      "value" = "/ui/v2"
     },
     {
       "name"  = "CUSTOM_REQUEST_HEADERS",
