@@ -114,19 +114,19 @@ variable "idp_loginclient_pat" {
 }
 
 variable "idp_zitadel_org" {
-  description = "The IdP organization name for the database."
+  description = "The IdP organization ID."
   type        = string
   sensitive   = true
 }
 
 variable "idp_notify_api_key" {
-  description = "The API key for the notification service used by the IdP database."
+  description = "The API key for the notification service used by the IdP login app."
   type        = string
   sensitive   = true
 }
 
 variable "idp_notify_template_id" {
-  description = "The template ID for the notification service used by the IdP database."
+  description = "The template ID for the notification service used by the IdP login app."
   type        = string
   sensitive   = true
 }
