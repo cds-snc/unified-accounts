@@ -1,4 +1,4 @@
-FROM ghcr.io/zitadel/zitadel:v4.11.0@sha256:74bdb4f9a806cced80677d34c548e46f48dac03bd4835a198e7db5bb1ac33884
+FROM ghcr.io/zitadel/zitadel:v4.12.2@sha256:f65429aff8d0042d68c14007c69ae91914d4d73b368db48e54d4d77732efb272
 
 # Add custom configuration and certificates
 COPY --chown=zitadel:zitadel ./*.yaml ./certificate.crt ./private.key /app/
