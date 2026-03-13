@@ -6,19 +6,19 @@ locals {
     },
     {
       "name"  = "ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_BASEURI"
-      "value" = "https://${var.domain}/ui/v2/login"
+      "value" = "https://${var.domain}/ui/v2"
     },
     {
       "name"  = "ZITADEL_OIDC_DEFAULTLOGINURLV2"
-      "value" = "https://${var.domain}/ui/v2/login/login?authRequest="
+      "value" = "https://${var.domain}/ui/v2/login?authRequest="
     },
     {
       "name"  = "ZITADEL_OIDC_DEFAULTLOGOUTURLV2"
-      "value" = "https://${var.domain}/ui/v2/login/logout?post_logout_redirect="
+      "value" = "https://${var.domain}/ui/v2/logout?post_logout_redirect="
     },
     {
       "name"  = "ZITADEL_SAML_DEFAULTLOGINURLV2"
-      "value" = "https://${var.domain}/ui/v2/login/login?samlRequest="
+      "value" = "https://${var.domain}/ui/v2/login?samlRequest="
     },
   ]
   idp_container_secrets = [
