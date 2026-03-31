@@ -30,7 +30,7 @@ jobs:
     - name: Configure aws credentials using OIDC
       uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
       with:
-        role-to-assume: arn:aws:iam::${{ vars.STAGING_AWS_ACCOUNT_ID }}:role/unified-accounts-apply 
+        role-to-assume: arn:aws:iam::${{ vars.STAGING_AWS_ACCOUNT_ID }}:role/platform-unified-accounts-apply 
         role-session-name: DeployContainer
         aws-region: ${{ env.AWS_REGION }}
 
