@@ -1,11 +1,11 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: unified-accounts
-  title: Unified Accounts
+  name: platform-unified-accounts
+  title: Platform Unified Accounts
   description: The infrastructure and configuration used to run the Platform Identity Provider.
   annotations:
-    github.com/project-slug: cds-snc/unified-accounts
+    github.com/project-slug: cds-snc/platform-unified-accounts
 spec:
   type: service
   lifecycle: production

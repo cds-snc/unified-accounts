@@ -1,5 +1,5 @@
 {
-	"name": "unified-accounts",
+	"name": "platform-unified-accounts",
 	"image": "mcr.microsoft.com/devcontainers/base:bullseye@sha256:c4a714ff46f28f8502a69d18756b5d9d7e49c2cc3e5ca166b5f74ff80d1792d0",
 	"containerEnv": {
 		"SHELL": "/bin/zsh"
