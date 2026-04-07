@@ -97,45 +97,22 @@ resource "aws_wafv2_web_acl" "idp" {
     statement {
       not_statement {
         statement {
-          or_statement {
-            statement {
-              byte_match_statement {
-                field_to_match {
-                  single_header {
-                    name = "host"
-                  }
-                }
-                text_transformation {
-                  priority = 1
-                  type     = "COMPRESS_WHITE_SPACE"
-                }
-                text_transformation {
-                  priority = 2
-                  type     = "LOWERCASE"
-                }
-                positional_constraint = "EXACTLY"
-                search_string         = var.domain
+          byte_match_statement {
+            field_to_match {
+              single_header {
+                name = "host"
               }
             }
-            statement {
-              byte_match_statement {
-                field_to_match {
-                  single_header {
-                    name = "host"
-                  }
-                }
-                text_transformation {
-                  priority = 1
-                  type     = "COMPRESS_WHITE_SPACE"
-                }
-                text_transformation {
-                  priority = 2
-                  type     = "LOWERCASE"
-                }
-                positional_constraint = "EXACTLY"
-                search_string         = "auth.cdssandbox.xyz"
-              }
+            text_transformation {
+              priority = 1
+              type     = "COMPRESS_WHITE_SPACE"
             }
+            text_transformation {
+              priority = 2
+              type     = "LOWERCASE"
+            }
+            positional_constraint = "EXACTLY"
+            search_string         = var.domain
           }
         }
       }

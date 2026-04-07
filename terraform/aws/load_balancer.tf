@@ -123,11 +123,6 @@ resource "aws_lb_listener" "idp" {
   tags = local.common_tags
 }
 
-resource "aws_lb_listener_certificate" "auth" {
-  listener_arn    = aws_lb_listener.idp.arn
-  certificate_arn = aws_acm_certificate_validation.auth.certificate_arn
-}
-
 resource "aws_lb_listener" "idp_http_redirect" {
   load_balancer_arn = aws_lb.idp.arn
   port              = "80"
