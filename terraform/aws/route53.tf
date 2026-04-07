@@ -55,3 +55,10 @@ resource "aws_route53_record" "idp_dmarc_TXT" {
     "v=DMARC1; p=reject; sp=reject; pct=100; rua=mailto:CDS.SECURITY-SECURITE.SNC@servicecanada.gc.ca"
   ]
 }
+
+module "resolver_dns" {
+  source           = "github.com/cds-snc/terraform-modules//resolver_dns?ref=v10.10.2"
+  vpc_id           = module.idp_vpc.vpc_id
+
+  billing_tag_value = var.billing_tag_value
+}
