@@ -24,6 +24,12 @@ variable "domain" {
   type        = string
 }
 
+variable "enable_waf_geo_restriction" {
+  description = "Whether to enable WAF geo restriction rule."
+  type        = bool
+  default     = false
+}
+
 variable "env" {
   description = "The current running environment"
   type        = string

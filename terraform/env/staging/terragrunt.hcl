@@ -3,6 +3,8 @@ terraform {
 }
 
 inputs = {
+  enable_waf_geo_restriction = true
+
   idp_cluster_capacity_provider = "FARGATE_SPOT"
   idp_database                  = "idp"
   idp_database_instance_count   = 1

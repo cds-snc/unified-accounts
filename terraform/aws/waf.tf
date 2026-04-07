@@ -3,6 +3,8 @@ locals {
     "EC2MetaDataSSRF_BODY",          # Rule is blocking IdP OIDC app creation
     "EC2MetaDataSSRF_QUERYARGUMENTS" # Rule is blocking IdP OIDC login
   ]
+  rate_limit_all      = 500
+  rate_limit_mutating = 100
 }
 
 resource "aws_wafv2_web_acl" "idp" {
@@ -125,36 +127,40 @@ resource "aws_wafv2_web_acl" "idp" {
     }
   }
 
-  rule {
-    name     = "CanadaOnlyGeoRestriction"
-    priority = 10
+  dynamic "rule" {
+    for_each = var.enable_waf_geo_restriction ? [1] : []
 
-    action {
-      block {
-        custom_response {
-          response_code = 403
-          response_header {
-            name  = "waf-block"
-            value = "CanadaOnlyGeoRestriction"
+    content {
+      name     = "CanadaOnlyGeoRestriction"
+      priority = 10
+
+      action {
+        block {
+          custom_response {
+            response_code = 403
+            response_header {
+              name  = "waf-block"
+              value = "CanadaOnlyGeoRestriction"
+            }
           }
         }
       }
-    }
 
-    statement {
-      not_statement {
-        statement {
-          geo_match_statement {
-            country_codes = ["CA"]
+      statement {
+        not_statement {
+          statement {
+            geo_match_statement {
+              country_codes = ["CA"]
+            }
           }
         }
       }
-    }
 
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "CanadaOnlyGeoRestriction"
-      sampled_requests_enabled   = true
+      visibility_config {
+        cloudwatch_metrics_enabled = true
+        metric_name                = "CanadaOnlyGeoRestriction"
+        sampled_requests_enabled   = true
+      }
     }
   }
 
@@ -308,6 +314,33 @@ resource "aws_wafv2_web_acl" "idp" {
     }
   }
 
+  rule {
+    name     = "BotControl"
+    priority = 80
+
+    action {
+      block {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesBotControlRuleSet"
+        vendor_name = "AWS"
+        managed_rule_group_configs {
+          aws_managed_rules_bot_control_rule_set {
+            inspection_level = "COMMON"
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "BotControl"
+      sampled_requests_enabled   = true
+    }
+  }
+
   visibility_config {
     cloudwatch_metrics_enabled = true
     metric_name                = "idp"
@@ -318,12 +351,12 @@ resource "aws_wafv2_web_acl" "idp" {
 }
 
 resource "aws_wafv2_rule_group" "rate_limiters_group_idp" {
-  capacity = 32 // 2, as a base cost. For each custom aggregation key that you specify, add 30 WCUs.
+  capacity = 75
   name     = "RateLimitersGroup-idp"
   scope    = "REGIONAL"
 
   rule {
-    name     = "AllRequestLimit"
+    name     = "AllRequestLimitIP"
     priority = 1
 
     action {
@@ -332,7 +365,7 @@ resource "aws_wafv2_rule_group" "rate_limiters_group_idp" {
 
     statement {
       rate_based_statement {
-        limit              = 1000
+        limit              = local.rate_limit_all
         aggregate_key_type = "IP"
 
       }
@@ -346,7 +379,7 @@ resource "aws_wafv2_rule_group" "rate_limiters_group_idp" {
   }
 
   rule {
-    name     = "MutatingRequestLimit"
+    name     = "AllRequestLimitJA4"
     priority = 10
 
     action {
@@ -355,7 +388,35 @@ resource "aws_wafv2_rule_group" "rate_limiters_group_idp" {
 
     statement {
       rate_based_statement {
-        limit              = 200
+        limit              = local.rate_limit_all
+        aggregate_key_type = "CUSTOM_KEYS"
+
+        custom_key {
+          ja4_fingerprint {
+            fallback_behavior = "MATCH"
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AllRequestLimitJA4"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "MutatingRequestLimitIP"
+    priority = 20
+
+    action {
+      block {}
+    }
+
+    statement {
+      rate_based_statement {
+        limit              = local.rate_limit_mutating
         aggregate_key_type = "IP"
         scope_down_statement {
           regex_match_statement {
@@ -374,10 +435,52 @@ resource "aws_wafv2_rule_group" "rate_limiters_group_idp" {
 
     visibility_config {
       cloudwatch_metrics_enabled = true
-      metric_name                = "MutatingRequestLimit"
+      metric_name                = "MutatingRequestLimitIP"
       sampled_requests_enabled   = true
     }
   }
+
+  rule {
+    name     = "MutatingRequestLimitJA4"
+    priority = 30
+
+    action {
+      block {}
+    }
+
+    statement {
+      rate_based_statement {
+        limit              = local.rate_limit_mutating
+        aggregate_key_type = "CUSTOM_KEYS"
+
+        custom_key {
+          ja4_fingerprint {
+            fallback_behavior = "MATCH"
+          }
+        }
+
+        scope_down_statement {
+          regex_match_statement {
+            field_to_match {
+              method {}
+            }
+            regex_string = "^(delete|patch|post|put)$"
+            text_transformation {
+              priority = 1
+              type     = "LOWERCASE"
+            }
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "MutatingRequestLimitJA4"
+      sampled_requests_enabled   = true
+    }
+  }
+
   visibility_config {
     cloudwatch_metrics_enabled = true
     metric_name                = "RateLimitersGroup"

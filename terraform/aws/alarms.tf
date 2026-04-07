@@ -10,11 +10,14 @@ locals {
     "Error"
   ]
   idp_login_skip_filters = [
-    "not_found",
     "already_exists",
     "failed_precondition",
+    "invalid_argument",
+    "not_found",
     "permission_denied",
-    "invalid_argument"
+    "SyntaxError",
+    "TypeError",
+    "Untrusted",
   ]
   idp_login_error_metric_pattern = "[(w=\"*${join("*\" || w=\"*", local.idp_login_error_filters)}*\") && w!=\"*${join("*\" && w!=\"*", local.idp_login_skip_filters)}*\"]"
 
