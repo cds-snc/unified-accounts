@@ -187,177 +187,8 @@ resource "aws_wafv2_web_acl" "idp" {
   }
 
   rule {
-    name     = "RateLimitersRuleGroup"
-    priority = 30
-
-    override_action {
-      none {}
-    }
-
-    statement {
-      rule_group_reference_statement {
-        arn = aws_wafv2_rule_group.rate_limiters_group_idp.arn
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "rate_limiters_rule_group"
-      sampled_requests_enabled   = false
-    }
-  }
-
-  rule {
-    name     = "AWSManagedRulesKnownBadInputsRuleSet"
-    priority = 40
-    override_action {
-      none {}
-    }
-
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesKnownBadInputsRuleSet"
-        vendor_name = "AWS"
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AWSManagedRulesKnownBadInputsRuleSet"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "AWSManagedRulesLinuxRuleSet"
-    priority = 50
-    override_action {
-      none {}
-    }
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesLinuxRuleSet"
-        vendor_name = "AWS"
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AWSManagedRulesLinuxRuleSet"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "AWSManagedRulesCommonRuleSet"
-    priority = 60
-
-    override_action {
-      none {}
-    }
-
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesCommonRuleSet"
-        vendor_name = "AWS"
-
-        dynamic "rule_action_override" {
-          for_each = local.excluded_common_rules
-          content {
-            name = rule_action_override.value
-            action_to_use {
-              count {}
-            }
-          }
-        }
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AWSManagedRulesCommonRuleSet"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "AWSManagedRulesAntiDDoSRuleSet"
-    priority = 70
-    override_action {
-      none {}
-    }
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesAntiDDoSRuleSet"
-        vendor_name = "AWS"
-
-        managed_rule_group_configs {
-          aws_managed_rules_anti_ddos_rule_set {
-            client_side_action_config {
-              challenge {
-                sensitivity     = "HIGH"
-                usage_of_action = "ENABLED"
-                exempt_uri_regular_expression {
-                  regex_string = "/api/|.(acc|avi|css|gif|jpe?g|js|pdf|png|tiff?|ttf|webm|webp|woff2?)$"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AWSManagedRulesAntiDDoSRuleSet"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "BotControl"
-    priority = 80
-
-    action {
-      block {}
-    }
-
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesBotControlRuleSet"
-        vendor_name = "AWS"
-        managed_rule_group_configs {
-          aws_managed_rules_bot_control_rule_set {
-            inspection_level = "COMMON"
-          }
-        }
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "BotControl"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  visibility_config {
-    cloudwatch_metrics_enabled = true
-    metric_name                = "idp"
-    sampled_requests_enabled   = true
-  }
-
-  tags = local.common_tags
-}
-
-resource "aws_wafv2_rule_group" "rate_limiters_group_idp" {
-  capacity = 75
-  name     = "RateLimitersGroup-idp"
-  scope    = "REGIONAL"
-
-  rule {
     name     = "AllRequestLimitIP"
-    priority = 1
+    priority = 30
 
     action {
       block {}
@@ -380,7 +211,7 @@ resource "aws_wafv2_rule_group" "rate_limiters_group_idp" {
 
   rule {
     name     = "AllRequestLimitJA4"
-    priority = 10
+    priority = 40
 
     action {
       block {}
@@ -408,7 +239,7 @@ resource "aws_wafv2_rule_group" "rate_limiters_group_idp" {
 
   rule {
     name     = "MutatingRequestLimitIP"
-    priority = 20
+    priority = 50
 
     action {
       block {}
@@ -442,7 +273,7 @@ resource "aws_wafv2_rule_group" "rate_limiters_group_idp" {
 
   rule {
     name     = "MutatingRequestLimitJA4"
-    priority = 30
+    priority = 60
 
     action {
       block {}
@@ -481,10 +312,144 @@ resource "aws_wafv2_rule_group" "rate_limiters_group_idp" {
     }
   }
 
+  rule {
+    name     = "AWSManagedRulesKnownBadInputsRuleSet"
+    priority = 70
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWSManagedRulesKnownBadInputsRuleSet"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "AWSManagedRulesLinuxRuleSet"
+    priority = 80
+    override_action {
+      none {}
+    }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesLinuxRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWSManagedRulesLinuxRuleSet"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "AWSManagedRulesCommonRuleSet"
+    priority = 90
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+
+        dynamic "rule_action_override" {
+          for_each = local.excluded_common_rules
+          content {
+            name = rule_action_override.value
+            action_to_use {
+              count {}
+            }
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWSManagedRulesCommonRuleSet"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "AWSManagedRulesAntiDDoSRuleSet"
+    priority = 100
+    override_action {
+      none {}
+    }
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesAntiDDoSRuleSet"
+        vendor_name = "AWS"
+
+        managed_rule_group_configs {
+          aws_managed_rules_anti_ddos_rule_set {
+            client_side_action_config {
+              challenge {
+                sensitivity     = "HIGH"
+                usage_of_action = "ENABLED"
+                exempt_uri_regular_expression {
+                  regex_string = "/api/|.(acc|avi|css|gif|jpe?g|js|pdf|png|tiff?|ttf|webm|webp|woff2?)$"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWSManagedRulesAntiDDoSRuleSet"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  rule {
+    name     = "BotControl"
+    priority = 110
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesBotControlRuleSet"
+        vendor_name = "AWS"
+        managed_rule_group_configs {
+          aws_managed_rules_bot_control_rule_set {
+            inspection_level = "COMMON"
+          }
+        }
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "BotControl"
+      sampled_requests_enabled   = true
+    }
+  }
+
   visibility_config {
     cloudwatch_metrics_enabled = true
-    metric_name                = "RateLimitersGroup"
-    sampled_requests_enabled   = false
+    metric_name                = "idp"
+    sampled_requests_enabled   = true
   }
 
   tags = local.common_tags
