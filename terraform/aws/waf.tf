@@ -436,6 +436,13 @@ resource "aws_wafv2_web_acl" "idp" {
             inspection_level = "COMMON"
           }
         }
+
+        rule_action_override {
+          name = "SignalNonBrowserUserAgent"
+          action_to_use {
+            challenge {}
+          }
+        }
       }
     }
 
