@@ -4,7 +4,7 @@ locals {
     "EC2MetaDataSSRF_QUERYARGUMENTS" # Rule is blocking IdP OIDC login
   ]
   rate_limit_all      = 500
-  rate_limit_mutating = 100
+  rate_limit_mutating = 200
 }
 
 resource "aws_wafv2_web_acl" "idp" {
