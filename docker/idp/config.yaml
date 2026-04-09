@@ -49,3 +49,6 @@ Restrictions:
   AllowedLanguages:
     - 'en'
     - 'fr'
+
+ServicePing:
+  Enabled: false
