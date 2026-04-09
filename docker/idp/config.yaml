@@ -4,6 +4,11 @@
 Log:
   Level: 'INFO'
 
+LogStore:
+  Access:
+    Stdout:
+      Enabled: true
+
 Port: 8080
 ExternalPort: 8080
 ExternalSecure: true
