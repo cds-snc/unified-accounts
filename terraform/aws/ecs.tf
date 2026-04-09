@@ -20,6 +20,10 @@ locals {
       "name"  = "ZITADEL_SAML_DEFAULTLOGINURLV2"
       "value" = "https://${var.domain}/ui/v2/login?samlRequest="
     },
+    {
+      "name"  = "ZITADEL_SYSTEMDEFAULTS_MULTIFACTORS_OTP_ISSUER"
+      "value" = "CDS-SNC"
+    }
   ]
   idp_container_secrets = [
     {
@@ -118,7 +122,7 @@ module "idp_ecs" {
 
   # Task definition
   container_image                     = "${aws_ecr_repository.idp.repository_url}:latest"
-  container_command                   = ["start-from-init", "--masterkeyFromEnv", "--tlsMode", "external", "--config", "/app/config.yaml", "--steps", "/app/steps.yaml"]
+  container_command                   = ["start-from-setup", "--masterkeyFromEnv", "--tlsMode", "external", "--config", "/app/config.yaml", "--steps", "/app/steps.yaml"]
   container_host_port                 = 8080
   container_port                      = 8080
   container_environment               = local.idp_container_env
