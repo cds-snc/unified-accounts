@@ -9,6 +9,10 @@ locals {
       "value" = "https://${var.domain}/ui/v2"
     },
     {
+      "name"  = "ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_DEFAULTREDIRECTURI"
+      "value" = "https://${var.domain}/ui/v2/account"
+    },
+    {
       "name"  = "ZITADEL_OIDC_DEFAULTLOGINURLV2"
       "value" = "https://${var.domain}/ui/v2/login?authRequest="
     },
