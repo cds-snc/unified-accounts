@@ -4,7 +4,7 @@ locals {
     "EC2MetaDataSSRF_QUERYARGUMENTS" # Rule is blocking IdP OIDC login
   ]
   rate_limit_all      = 500
-  rate_limit_mutating = 200
+  rate_limit_mutating = 300
 }
 
 resource "aws_wafv2_web_acl" "idp" {
@@ -434,6 +434,13 @@ resource "aws_wafv2_web_acl" "idp" {
         managed_rule_group_configs {
           aws_managed_rules_bot_control_rule_set {
             inspection_level = "COMMON"
+          }
+        }
+
+        rule_action_override {
+          name = "SignalNonBrowserUserAgent"
+          action_to_use {
+            count {}
           }
         }
       }
