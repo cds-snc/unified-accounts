@@ -3,8 +3,8 @@ locals {
     "EC2MetaDataSSRF_BODY",          # Rule is blocking IdP OIDC app creation
     "EC2MetaDataSSRF_QUERYARGUMENTS" # Rule is blocking IdP OIDC login
   ]
-  rate_limit_all      = 500
-  rate_limit_mutating = 300
+  rate_limit_all      = 1000
+  rate_limit_mutating = 500
 }
 
 resource "aws_wafv2_web_acl" "idp" {
