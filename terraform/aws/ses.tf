@@ -26,7 +26,7 @@ data "aws_iam_policy_document" "idp_send_email" {
       "ses:SendRawEmail"
     ]
     resources = [
-      "*"
+      aws_ses_domain_identity.idp.arn
     ]
   }
 }

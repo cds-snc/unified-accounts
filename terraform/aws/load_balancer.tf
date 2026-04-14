@@ -57,7 +57,7 @@ resource "aws_lb_target_group" "idp" {
     enabled  = true
     protocol = "HTTP"
     path     = "/debug/healthz"
-    matcher  = "200-399"
+    matcher  = "200"
   }
 
   stickiness {
@@ -86,7 +86,7 @@ resource "aws_lb_target_group" "idp_login" {
     enabled  = true
     protocol = "HTTP"
     path     = "/ui/v2/healthy"
-    matcher  = "200-399"
+    matcher  = "200"
   }
 
   stickiness {

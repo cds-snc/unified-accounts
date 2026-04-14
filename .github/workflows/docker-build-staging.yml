@@ -57,6 +57,5 @@ jobs:
           --push \
           --platform linux/arm64 \
           --tag "${{ env.REGISTRY_PREFIX }}/idp:sha-$GITHUB_SHA" \
-          --tag "${{ env.REGISTRY_PREFIX }}/idp:latest" \
           --file ./docker/idp/Dockerfile \
           ./docker/idp
