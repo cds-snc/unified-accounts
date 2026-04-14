@@ -78,7 +78,7 @@ resource "aws_efs_access_point" "idp" {
     creation_info {
       owner_gid   = 1000
       owner_uid   = 1000
-      permissions = 750
+      permissions = 755
     }
   }
   tags = local.common_tags

@@ -3,7 +3,11 @@ locals {
   idp_error_filters = [
     "level=error"
   ]
-  idp_error_metric_pattern = "[(w=\"*${join("*\" || w=\"*", local.idp_error_filters)}*\")]"
+  idp_error_skip_filters = [
+    "already been committed",
+    "AuthRequest.NotExisting",
+  ]
+  idp_error_metric_pattern = "[(w=\"*${join("*\" || w=\"*", local.idp_error_filters)}*\") && w!=\"*${join("*\" && w!=\"*", local.idp_error_skip_filters)}*\"]"
 
   # IdP Login errors
   idp_login_error_filters = [
@@ -11,6 +15,7 @@ locals {
   ]
   idp_login_skip_filters = [
     "already_exists",
+    "COMMAND-Sx208nt", # [failed_precondition] Auth Request has already been handled
     "failed_precondition",
     "invalid_argument",
     "not_found",
@@ -18,6 +23,7 @@ locals {
     "SyntaxError",
     "TypeError",
     "Untrusted",
+    "zitadel.v1.ErrorDetail",
   ]
   idp_login_error_metric_pattern = "[(w=\"*${join("*\" || w=\"*", local.idp_login_error_filters)}*\") && w!=\"*${join("*\" && w!=\"*", local.idp_login_skip_filters)}*\"]"
 
