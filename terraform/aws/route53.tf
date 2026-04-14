@@ -11,7 +11,7 @@ resource "aws_route53_record" "idp_A" {
   alias {
     name                   = aws_lb.idp.dns_name
     zone_id                = aws_lb.idp.zone_id
-    evaluate_target_health = false
+    evaluate_target_health = true
   }
 }
 

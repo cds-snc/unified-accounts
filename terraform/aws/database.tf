@@ -24,7 +24,7 @@ module "idp_database" {
 
   backup_retention_period      = 14
   preferred_backup_window      = "02:00-04:00"
-  performance_insights_enabled = false
+  performance_insights_enabled = true
 
   vpc_id             = module.idp_vpc.vpc_id
   subnet_ids         = module.idp_vpc.private_subnet_ids
