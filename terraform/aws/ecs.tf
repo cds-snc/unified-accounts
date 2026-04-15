@@ -126,7 +126,7 @@ module "idp_ecs" {
 
   # Task definition
   container_image                     = "${aws_ecr_repository.idp.repository_url}:latest"
-  container_command                   = ["start", "--masterkeyFromEnv", "--tlsMode", "external", "--config", "/app/config.yaml", "--steps", "/app/steps.yaml"]
+  container_command                   = ["start", "--masterkeyFromEnv", "--tlsMode", "external", "--config", "/app/config.yaml"]
   container_host_port                 = 8080
   container_port                      = 8080
   container_environment               = local.idp_container_env
@@ -143,24 +143,24 @@ module "idp_ecs" {
 
   enable_execute_command = false
 
-  # container_mount_points = [{
-  #   sourceVolume  = "idp-data"
-  #   containerPath = "/idp"
-  #   readOnly      = false
-  # }]
+  container_mount_points = [{
+    sourceVolume  = "idp-data"
+    containerPath = "/idp"
+    readOnly      = false
+  }]
 
-  # task_volume = [{
-  #   name = "idp-data"
-  #   efs_volume_configuration = {
-  #     file_system_id          = aws_efs_file_system.idp.id
-  #     transit_encryption      = "ENABLED"
-  #     transit_encryption_port = 2049
-  #     authorization_config = {
-  #       access_point_id = aws_efs_access_point.idp.id
-  #       iam             = "ENABLED"
-  #     }
-  #   }
-  # }]
+  task_volume = [{
+    name = "idp-data"
+    efs_volume_configuration = {
+      file_system_id          = aws_efs_file_system.idp.id
+      transit_encryption      = "ENABLED"
+      transit_encryption_port = 2049
+      authorization_config = {
+        access_point_id = aws_efs_access_point.idp.id
+        iam             = "ENABLED"
+      }
+    }
+  }]
 
   lb_target_group_arns = [
     for protocol_version in local.protocol_versions : {
@@ -219,24 +219,24 @@ module "login_ecs" {
 
   enable_execute_command = false
 
-  # container_mount_points = [{
-  #   sourceVolume  = "idp-data"
-  #   containerPath = "/idp"
-  #   readOnly      = false
-  # }]
+  container_mount_points = [{
+    sourceVolume  = "idp-data"
+    containerPath = "/idp"
+    readOnly      = false
+  }]
 
-  # task_volume = [{
-  #   name = "idp-data"
-  #   efs_volume_configuration = {
-  #     file_system_id          = aws_efs_file_system.idp.id
-  #     transit_encryption      = "ENABLED"
-  #     transit_encryption_port = 2049
-  #     authorization_config = {
-  #       access_point_id = aws_efs_access_point.idp.id
-  #       iam             = "ENABLED"
-  #     }
-  #   }
-  # }]
+  task_volume = [{
+    name = "idp-data"
+    efs_volume_configuration = {
+      file_system_id          = aws_efs_file_system.idp.id
+      transit_encryption      = "ENABLED"
+      transit_encryption_port = 2049
+      authorization_config = {
+        access_point_id = aws_efs_access_point.idp.id
+        iam             = "ENABLED"
+      }
+    }
+  }]
 
   lb_target_group_arn = aws_lb_target_group.idp_login.arn
   subnet_ids          = module.idp_vpc.private_subnet_ids

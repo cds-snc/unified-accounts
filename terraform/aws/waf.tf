@@ -15,444 +15,6 @@ resource "aws_wafv2_web_acl" "idp" {
     allow {}
   }
 
-  rule {
-    name     = "BlockLargeRequests"
-    priority = 1
-
-    action {
-      block {}
-    }
-
-    statement {
-      or_statement {
-        statement {
-          size_constraint_statement {
-            field_to_match {
-              body {
-                oversize_handling = "MATCH"
-              }
-            }
-            comparison_operator = "GT"
-            size                = 8192
-            text_transformation {
-              priority = 0
-              type     = "NONE"
-            }
-          }
-        }
-        statement {
-          size_constraint_statement {
-            field_to_match {
-              cookies {
-                match_pattern {
-                  all {}
-                }
-                match_scope       = "ALL"
-                oversize_handling = "MATCH"
-              }
-            }
-            comparison_operator = "GT"
-            size                = 8192
-            text_transformation {
-              priority = 0
-              type     = "NONE"
-            }
-          }
-        }
-        statement {
-          size_constraint_statement {
-            field_to_match {
-              headers {
-                match_pattern {
-                  all {}
-                }
-                match_scope       = "ALL"
-                oversize_handling = "MATCH"
-              }
-            }
-            comparison_operator = "GT"
-            size                = 8192
-            text_transformation {
-              priority = 0
-              type     = "NONE"
-            }
-          }
-        }
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "BlockLargeRequests"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "InvalidHost"
-    priority = 5
-
-    action {
-      block {}
-    }
-
-    statement {
-      not_statement {
-        statement {
-          byte_match_statement {
-            field_to_match {
-              single_header {
-                name = "host"
-              }
-            }
-            text_transformation {
-              priority = 1
-              type     = "COMPRESS_WHITE_SPACE"
-            }
-            text_transformation {
-              priority = 2
-              type     = "LOWERCASE"
-            }
-            positional_constraint = "EXACTLY"
-            search_string         = var.domain
-          }
-        }
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "InvalidHost"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  dynamic "rule" {
-    for_each = var.enable_waf_geo_restriction ? [1] : []
-
-    content {
-      name     = "CanadaOnlyGeoRestriction"
-      priority = 10
-
-      action {
-        block {
-          custom_response {
-            response_code = 403
-            response_header {
-              name  = "waf-block"
-              value = "CanadaOnlyGeoRestriction"
-            }
-          }
-        }
-      }
-
-      statement {
-        not_statement {
-          statement {
-            geo_match_statement {
-              country_codes = ["CA"]
-            }
-          }
-        }
-      }
-
-      visibility_config {
-        cloudwatch_metrics_enabled = true
-        metric_name                = "CanadaOnlyGeoRestriction"
-        sampled_requests_enabled   = true
-      }
-    }
-  }
-
-  rule {
-    name     = "AWSManagedRulesAmazonIpReputationList"
-    priority = 20
-
-    override_action {
-      none {}
-    }
-
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesAmazonIpReputationList"
-        vendor_name = "AWS"
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AWSManagedRulesAmazonIpReputationList"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "AllRequestLimitIP"
-    priority = 30
-
-    action {
-      block {}
-    }
-
-    statement {
-      rate_based_statement {
-        limit              = local.rate_limit_all
-        aggregate_key_type = "IP"
-
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AllRequestLimit"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "AllRequestLimitJA4"
-    priority = 40
-
-    action {
-      block {}
-    }
-
-    statement {
-      rate_based_statement {
-        limit              = local.rate_limit_all
-        aggregate_key_type = "CUSTOM_KEYS"
-
-        custom_key {
-          ja4_fingerprint {
-            fallback_behavior = "MATCH"
-          }
-        }
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AllRequestLimitJA4"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "MutatingRequestLimitIP"
-    priority = 50
-
-    action {
-      block {}
-    }
-
-    statement {
-      rate_based_statement {
-        limit              = local.rate_limit_mutating
-        aggregate_key_type = "IP"
-        scope_down_statement {
-          regex_match_statement {
-            field_to_match {
-              method {}
-            }
-            regex_string = "^(delete|patch|post|put)$"
-            text_transformation {
-              priority = 1
-              type     = "LOWERCASE"
-            }
-          }
-        }
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "MutatingRequestLimitIP"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "MutatingRequestLimitJA4"
-    priority = 60
-
-    action {
-      block {}
-    }
-
-    statement {
-      rate_based_statement {
-        limit              = local.rate_limit_mutating
-        aggregate_key_type = "CUSTOM_KEYS"
-
-        custom_key {
-          ja4_fingerprint {
-            fallback_behavior = "MATCH"
-          }
-        }
-
-        scope_down_statement {
-          regex_match_statement {
-            field_to_match {
-              method {}
-            }
-            regex_string = "^(delete|patch|post|put)$"
-            text_transformation {
-              priority = 1
-              type     = "LOWERCASE"
-            }
-          }
-        }
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "MutatingRequestLimitJA4"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "AWSManagedRulesKnownBadInputsRuleSet"
-    priority = 70
-    override_action {
-      none {}
-    }
-
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesKnownBadInputsRuleSet"
-        vendor_name = "AWS"
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AWSManagedRulesKnownBadInputsRuleSet"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "AWSManagedRulesLinuxRuleSet"
-    priority = 80
-    override_action {
-      none {}
-    }
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesLinuxRuleSet"
-        vendor_name = "AWS"
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AWSManagedRulesLinuxRuleSet"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "AWSManagedRulesCommonRuleSet"
-    priority = 90
-
-    override_action {
-      none {}
-    }
-
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesCommonRuleSet"
-        vendor_name = "AWS"
-
-        dynamic "rule_action_override" {
-          for_each = local.excluded_common_rules
-          content {
-            name = rule_action_override.value
-            action_to_use {
-              count {}
-            }
-          }
-        }
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AWSManagedRulesCommonRuleSet"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "AWSManagedRulesAntiDDoSRuleSet"
-    priority = 100
-    override_action {
-      none {}
-    }
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesAntiDDoSRuleSet"
-        vendor_name = "AWS"
-
-        managed_rule_group_configs {
-          aws_managed_rules_anti_ddos_rule_set {
-            client_side_action_config {
-              challenge {
-                sensitivity     = "HIGH"
-                usage_of_action = "ENABLED"
-                exempt_uri_regular_expression {
-                  regex_string = "/api/|.(acc|avi|css|gif|jpe?g|js|pdf|png|tiff?|ttf|webm|webp|woff2?)$"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "AWSManagedRulesAntiDDoSRuleSet"
-      sampled_requests_enabled   = true
-    }
-  }
-
-  rule {
-    name     = "BotControl"
-    priority = 110
-
-    override_action {
-      none {}
-    }
-
-    statement {
-      managed_rule_group_statement {
-        name        = "AWSManagedRulesBotControlRuleSet"
-        vendor_name = "AWS"
-        managed_rule_group_configs {
-          aws_managed_rules_bot_control_rule_set {
-            inspection_level = "COMMON"
-          }
-        }
-
-        rule_action_override {
-          name = "SignalNonBrowserUserAgent"
-          action_to_use {
-            count {}
-          }
-        }
-      }
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "BotControl"
-      sampled_requests_enabled   = true
-    }
-  }
-
   visibility_config {
     cloudwatch_metrics_enabled = true
     metric_name                = "idp"
@@ -460,6 +22,462 @@ resource "aws_wafv2_web_acl" "idp" {
   }
 
   tags = local.common_tags
+
+  lifecycle {
+    ignore_changes = [rule]
+  }
+}
+
+resource "aws_wafv2_web_acl_rule" "block_large_requests" {
+  name        = "BlockLargeRequests"
+  priority    = 1
+  web_acl_arn = aws_wafv2_web_acl.idp.arn
+
+  action {
+    block {}
+  }
+
+  statement {
+    or_statement {
+      statement {
+        size_constraint_statement {
+          field_to_match {
+            body {
+              oversize_handling = "MATCH"
+            }
+          }
+          comparison_operator = "GT"
+          size                = 8192
+          text_transformation {
+            priority = 0
+            type     = "NONE"
+          }
+        }
+      }
+      statement {
+        size_constraint_statement {
+          field_to_match {
+            cookies {
+              match_pattern {
+                all {}
+              }
+              match_scope       = "ALL"
+              oversize_handling = "MATCH"
+            }
+          }
+          comparison_operator = "GT"
+          size                = 8192
+          text_transformation {
+            priority = 0
+            type     = "NONE"
+          }
+        }
+      }
+      statement {
+        size_constraint_statement {
+          field_to_match {
+            headers {
+              match_pattern {
+                all {}
+              }
+              match_scope       = "ALL"
+              oversize_handling = "MATCH"
+            }
+          }
+          comparison_operator = "GT"
+          size                = 8192
+          text_transformation {
+            priority = 0
+            type     = "NONE"
+          }
+        }
+      }
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "BlockLargeRequests"
+    sampled_requests_enabled   = true
+  }
+}
+
+resource "aws_wafv2_web_acl_rule" "invalid_host" {
+  name        = "InvalidHost"
+  priority    = 5
+  web_acl_arn = aws_wafv2_web_acl.idp.arn
+
+  action {
+    block {}
+  }
+
+  statement {
+    not_statement {
+      statement {
+        byte_match_statement {
+          field_to_match {
+            single_header {
+              name = "host"
+            }
+          }
+          text_transformation {
+            priority = 1
+            type     = "COMPRESS_WHITE_SPACE"
+          }
+          text_transformation {
+            priority = 2
+            type     = "LOWERCASE"
+          }
+          positional_constraint = "EXACTLY"
+          search_string         = var.domain
+        }
+      }
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "InvalidHost"
+    sampled_requests_enabled   = true
+  }
+}
+
+resource "aws_wafv2_web_acl_rule" "canada_only_geo_restriction" {
+  count = var.enable_waf_geo_restriction ? 1 : 0
+
+  name        = "CanadaOnlyGeoRestriction"
+  priority    = 10
+  web_acl_arn = aws_wafv2_web_acl.idp.arn
+
+  action {
+    block {
+      custom_response {
+        response_code = 403
+        response_header {
+          name  = "waf-block"
+          value = "CanadaOnlyGeoRestriction"
+        }
+      }
+    }
+  }
+
+  statement {
+    not_statement {
+      statement {
+        geo_match_statement {
+          country_codes = ["CA"]
+        }
+      }
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "CanadaOnlyGeoRestriction"
+    sampled_requests_enabled   = true
+  }
+}
+
+resource "aws_wafv2_web_acl_rule" "aws_managed_rules_amazon_ip_reputation_list" {
+  name        = "AWSManagedRulesAmazonIpReputationList"
+  priority    = 20
+  web_acl_arn = aws_wafv2_web_acl.idp.arn
+
+  override_action {
+    none {}
+  }
+
+  statement {
+    managed_rule_group_statement {
+      name        = "AWSManagedRulesAmazonIpReputationList"
+      vendor_name = "AWS"
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "AWSManagedRulesAmazonIpReputationList"
+    sampled_requests_enabled   = true
+  }
+}
+
+resource "aws_wafv2_web_acl_rule" "all_request_limit_ip" {
+  name        = "AllRequestLimitIP"
+  priority    = 30
+  web_acl_arn = aws_wafv2_web_acl.idp.arn
+
+  action {
+    block {}
+  }
+
+  statement {
+    rate_based_statement {
+      limit              = local.rate_limit_all
+      aggregate_key_type = "IP"
+
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "AllRequestLimit"
+    sampled_requests_enabled   = true
+  }
+}
+
+resource "aws_wafv2_web_acl_rule" "all_request_limit_ja4" {
+  name        = "AllRequestLimitJA4"
+  priority    = 40
+  web_acl_arn = aws_wafv2_web_acl.idp.arn
+
+  action {
+    block {}
+  }
+
+  statement {
+    rate_based_statement {
+      limit              = local.rate_limit_all
+      aggregate_key_type = "CUSTOM_KEYS"
+
+      custom_keys {
+        ja4_fingerprint {
+          fallback_behavior = "MATCH"
+        }
+      }
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "AllRequestLimitJA4"
+    sampled_requests_enabled   = true
+  }
+}
+
+resource "aws_wafv2_web_acl_rule" "mutating_request_limit_ip" {
+  name        = "MutatingRequestLimitIP"
+  priority    = 50
+  web_acl_arn = aws_wafv2_web_acl.idp.arn
+
+  action {
+    block {}
+  }
+
+  statement {
+    rate_based_statement {
+      limit              = local.rate_limit_mutating
+      aggregate_key_type = "IP"
+      scope_down_statement {
+        regex_match_statement {
+          field_to_match {
+            method {}
+          }
+          regex_string = "^(delete|patch|post|put)$"
+          text_transformation {
+            priority = 1
+            type     = "LOWERCASE"
+          }
+        }
+      }
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "MutatingRequestLimitIP"
+    sampled_requests_enabled   = true
+  }
+}
+
+resource "aws_wafv2_web_acl_rule" "mutating_request_limit_ja4" {
+  name        = "MutatingRequestLimitJA4"
+  priority    = 60
+  web_acl_arn = aws_wafv2_web_acl.idp.arn
+
+  action {
+    block {}
+  }
+
+  statement {
+    rate_based_statement {
+      limit              = local.rate_limit_mutating
+      aggregate_key_type = "CUSTOM_KEYS"
+
+      custom_keys {
+        ja4_fingerprint {
+          fallback_behavior = "MATCH"
+        }
+      }
+
+      scope_down_statement {
+        regex_match_statement {
+          field_to_match {
+            method {}
+          }
+          regex_string = "^(delete|patch|post|put)$"
+          text_transformation {
+            priority = 1
+            type     = "LOWERCASE"
+          }
+        }
+      }
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "MutatingRequestLimitJA4"
+    sampled_requests_enabled   = true
+  }
+}
+
+resource "aws_wafv2_web_acl_rule" "aws_managed_rules_known_bad_inputs_rule_set" {
+  name        = "AWSManagedRulesKnownBadInputsRuleSet"
+  priority    = 70
+  web_acl_arn = aws_wafv2_web_acl.idp.arn
+
+  override_action {
+    none {}
+  }
+
+  statement {
+    managed_rule_group_statement {
+      name        = "AWSManagedRulesKnownBadInputsRuleSet"
+      vendor_name = "AWS"
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "AWSManagedRulesKnownBadInputsRuleSet"
+    sampled_requests_enabled   = true
+  }
+}
+
+resource "aws_wafv2_web_acl_rule" "aws_managed_rules_linux_rule_set" {
+  name        = "AWSManagedRulesLinuxRuleSet"
+  priority    = 80
+  web_acl_arn = aws_wafv2_web_acl.idp.arn
+
+  override_action {
+    none {}
+  }
+  statement {
+    managed_rule_group_statement {
+      name        = "AWSManagedRulesLinuxRuleSet"
+      vendor_name = "AWS"
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "AWSManagedRulesLinuxRuleSet"
+    sampled_requests_enabled   = true
+  }
+}
+
+resource "aws_wafv2_web_acl_rule" "aws_managed_rules_common_rule_set" {
+  name        = "AWSManagedRulesCommonRuleSet"
+  priority    = 90
+  web_acl_arn = aws_wafv2_web_acl.idp.arn
+
+  override_action {
+    none {}
+  }
+
+  statement {
+    managed_rule_group_statement {
+      name        = "AWSManagedRulesCommonRuleSet"
+      vendor_name = "AWS"
+
+      dynamic "rule_action_override" {
+        for_each = local.excluded_common_rules
+        content {
+          name = rule_action_override.value
+          action_to_use {
+            count {}
+          }
+        }
+      }
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "AWSManagedRulesCommonRuleSet"
+    sampled_requests_enabled   = true
+  }
+}
+
+resource "aws_wafv2_web_acl_rule" "aws_managed_rules_anti_ddos_rule_set" {
+  name        = "AWSManagedRulesAntiDDoSRuleSet"
+  priority    = 100
+  web_acl_arn = aws_wafv2_web_acl.idp.arn
+
+  override_action {
+    none {}
+  }
+  statement {
+    managed_rule_group_statement {
+      name        = "AWSManagedRulesAntiDDoSRuleSet"
+      vendor_name = "AWS"
+
+      managed_rule_group_configs {
+        aws_managed_rules_anti_ddos_rule_set {
+          client_side_action_config {
+            challenge {
+              sensitivity     = "HIGH"
+              usage_of_action = "ENABLED"
+              exempt_uri_regular_expression {
+                regex_string = "/api/|.(acc|avi|css|gif|jpe?g|js|pdf|png|tiff?|ttf|webm|webp|woff2?)$"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "AWSManagedRulesAntiDDoSRuleSet"
+    sampled_requests_enabled   = true
+  }
+}
+
+resource "aws_wafv2_web_acl_rule" "aws_managed_rules_bot_control_rule_set" {
+  name        = "BotControl"
+  priority    = 110
+  web_acl_arn = aws_wafv2_web_acl.idp.arn
+
+  override_action {
+    none {}
+  }
+
+  statement {
+    managed_rule_group_statement {
+      name        = "AWSManagedRulesBotControlRuleSet"
+      vendor_name = "AWS"
+      managed_rule_group_configs {
+        aws_managed_rules_bot_control_rule_set {
+          inspection_level = "COMMON"
+        }
+      }
+
+      rule_action_override {
+        name = "SignalNonBrowserUserAgent"
+        action_to_use {
+          count {}
+        }
+      }
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "BotControl"
+    sampled_requests_enabled   = true
+  }
 }
 
 resource "aws_wafv2_web_acl_association" "idp" {
