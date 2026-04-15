@@ -73,16 +73,20 @@ locals {
   ]
   login_container_env = [
     {
-      "name"  = "ZITADEL_API_URL",
-      "value" = "http://idp.${aws_service_discovery_private_dns_namespace.idp_ecs.name}:8080"
+      "name"  = "CUSTOM_REQUEST_HEADERS",
+      "value" = "Host:${var.domain}"
     },
     {
       "name"  = "NEXT_PUBLIC_BASE_PATH",
       "value" = "/ui/v2"
     },
     {
-      "name"  = "CUSTOM_REQUEST_HEADERS",
-      "value" = "Host:${var.domain}"
+      "name"  = "NEXT_PUBLIC_ENABLE_EMAIL_OTP",
+      "value" = "false"
+    },
+    {
+      "name"  = "ZITADEL_API_URL",
+      "value" = "http://idp.${aws_service_discovery_private_dns_namespace.idp_ecs.name}:8080"
     },
   ]
   login_container_secrets = [
