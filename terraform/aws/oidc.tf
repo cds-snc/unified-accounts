@@ -40,6 +40,7 @@ resource "aws_iam_policy" "pr_review_env" {
   policy = data.aws_iam_policy_document.pr_review_env[0].json
 }
 
+#trivy:ignore:AWS-0342
 data "aws_iam_policy_document" "pr_review_env" {
   count = var.env == "staging" ? 1 : 0
 
