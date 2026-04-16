@@ -70,6 +70,6 @@
             "action": {
                 "type": "expire"
             }
-        },
+        }
     ]
   }
