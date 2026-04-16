@@ -1,35 +1,7 @@
   {
     "rules": [
         {
-            "rulePriority": 1,
-            "description": "Archive images not pulled in 90 days",
-            "selection": {
-                "tagStatus": "any",
-                "countType": "sinceImagePulled",
-                "countUnit": "days",
-                "countNumber": 90
-            },
-            "action": {
-                "type": "transition",
-                "targetStorageClass": "archive"
-            }
-        },
-        {
             "rulePriority": 10,
-            "description": "Expire images archived for more than 90 days",
-            "selection": {
-                "tagStatus": "any",
-                "storageClass": "archive",
-                "countType": "sinceImageTransitioned",
-                "countUnit": "days",
-                "countNumber": 90
-            },
-            "action": {
-                "type": "expire"
-            }
-        },
-        {
-            "rulePriority": 20,
             "description": "Keep last 20 git SHA tagged images",
             "selection": {
                 "tagStatus": "tagged",
@@ -44,7 +16,7 @@
             }
         },
         {
-            "rulePriority": 30,
+            "rulePriority": 20,
             "description": "Keep last 20 PR SHA tagged images",
             "selection": {
                 "tagStatus": "tagged",
@@ -59,13 +31,41 @@
             }
         },
         {
-            "rulePriority": 40,
+            "rulePriority": 30,
             "description": "Expire untagged images older than 1 day",
             "selection": {
                 "tagStatus": "untagged",
                 "countType": "sinceImagePushed",
                 "countUnit": "days",
                 "countNumber": 1
+            },
+            "action": {
+                "type": "expire"
+            }
+        },
+        {
+            "rulePriority": 40,
+            "description": "Archive images not pulled in 90 days",
+            "selection": {
+                "tagStatus": "any",
+                "countType": "sinceImagePulled",
+                "countUnit": "days",
+                "countNumber": 90
+            },
+            "action": {
+                "type": "transition",
+                "targetStorageClass": "archive"
+            }
+        },
+        {
+            "rulePriority": 50,
+            "description": "Expire images archived for more than 90 days",
+            "selection": {
+                "tagStatus": "any",
+                "storageClass": "archive",
+                "countType": "sinceImageTransitioned",
+                "countUnit": "days",
+                "countNumber": 90
             },
             "action": {
                 "type": "expire"
