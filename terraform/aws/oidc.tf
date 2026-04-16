@@ -10,6 +10,7 @@ locals {
 # attribute of each role.
 # 
 module "github_workflow_roles" {
+  count  = var.env == "staging" ? 1 : 0
   source = "github.com/cds-snc/terraform-modules//gh_oidc_role?ref=v10.11.3"
 
   roles = [
@@ -41,7 +42,7 @@ resource "aws_iam_role_policy_attachment" "pr_review_deploy" {
   role       = local.pr_review_deploy
   policy_arn = aws_iam_policy.pr_review_deploy[0].arn
 
-  depends_on = [module.github_workflow_roles]
+  depends_on = [module.github_workflow_roles[0]]
 }
 
 resource "aws_iam_policy" "pr_review_deploy" {
@@ -128,11 +129,10 @@ data "aws_iam_policy_document" "pr_review_deploy" {
       "ecr:InitiateLayerUpload",
       "ecr:ListImages",
       "ecr:PutImage",
-      "ecr:SetRepositoryPolicy",
       "ecr:UploadLayerPart"
     ]
     resources = [
-      aws_ecr_repository.idp_login_pr.arn
+      aws_ecr_repository.idp_login_pr[0].arn
     ]
   }
 
@@ -164,7 +164,7 @@ resource "aws_iam_role_policy_attachment" "pr_review_delete_unused" {
   role       = local.pr_review_delete_unused
   policy_arn = aws_iam_policy.pr_review_delete_unused[0].arn
 
-  depends_on = [module.github_workflow_roles]
+  depends_on = [module.github_workflow_roles[0]]
 }
 
 resource "aws_iam_policy" "pr_review_delete_unused" {
@@ -232,7 +232,7 @@ resource "aws_iam_role_policy_attachment" "pr_review_get_vars" {
   role       = local.pr_review_get_vars
   policy_arn = aws_iam_policy.pr_review_get_vars[0].arn
 
-  depends_on = [module.github_workflow_roles]
+  depends_on = [module.github_workflow_roles[0]]
 }
 
 resource "aws_iam_policy" "pr_review_get_vars" {
@@ -252,7 +252,7 @@ data "aws_iam_policy_document" "pr_review_get_vars" {
       "ecs:ListTasks"
     ]
     resources = [
-      "arn:aws:ecs:${var.region}:${var.account_id}:cluster/idp"
+      "arn:aws:ecs:${var.region}:${var.account_id}:container-instance/idp/*"
     ]
   }
 

@@ -292,18 +292,6 @@ resource "aws_security_group" "lambda_pr_review" {
   tags        = local.common_tags
 }
 
-resource "aws_security_group_rule" "lambda_pr_review_ingress_internet" {
-  count = var.env == "staging" ? 1 : 0
-
-  description       = "Ingress from the internet to the lambda PR review env"
-  type              = "ingress"
-  from_port         = 443
-  to_port           = 443
-  protocol          = "tcp"
-  security_group_id = aws_security_group.lambda_pr_review[0].id
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
 resource "aws_security_group_rule" "lambda_pr_review_egress_internet" {
   count = var.env == "staging" ? 1 : 0
 
@@ -328,7 +316,7 @@ resource "aws_security_group_rule" "lambda_pr_review_egress_idp_ecs" {
   source_security_group_id = aws_security_group.idp_ecs.id
 }
 
-resource "aws_security_group_rule" "idp_login_ecs_ingress_lambda_pr_review" {
+resource "aws_security_group_rule" "idp_ecs_ingress_lambda_pr_review" {
   count = var.env == "staging" ? 1 : 0
 
   description              = "Ingress to idp ECS task from lambda PR review env"
