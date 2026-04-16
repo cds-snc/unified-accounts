@@ -84,5 +84,3 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           secret-scan: true
           terragrunt: true
-          terraform-plan: |
-            --parallelism=25
