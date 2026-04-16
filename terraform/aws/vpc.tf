@@ -318,7 +318,7 @@ resource "aws_security_group_rule" "lambda_pr_review_egress_internet" {
 
 resource "aws_security_group_rule" "lambda_pr_review_egress_idp_ecs" {
   count = var.env == "staging" ? 1 : 0
-  
+
   description              = "Egress from lambda PR review env to idp ECS task"
   type                     = "egress"
   to_port                  = 8080
@@ -330,7 +330,7 @@ resource "aws_security_group_rule" "lambda_pr_review_egress_idp_ecs" {
 
 resource "aws_security_group_rule" "idp_login_ecs_ingress_lambda_pr_review" {
   count = var.env == "staging" ? 1 : 0
-  
+
   description              = "Ingress to idp ECS task from lambda PR review env"
   type                     = "ingress"
   to_port                  = 8080
