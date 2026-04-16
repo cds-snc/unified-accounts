@@ -279,3 +279,51 @@ resource "aws_security_group_rule" "idp_login_efs_ingress_ecs" {
   security_group_id        = aws_security_group.idp_efs.id
   source_security_group_id = aws_security_group.idp_login_ecs.id
 }
+
+#
+# PR review environment
+#
+resource "aws_security_group" "lambda_pr_review" {
+  count = var.env == "staging" ? 1 : 0
+
+  name        = "lambda-pr-review"
+  description = "Lambda PR review environment"
+  vpc_id      = module.idp_vpc.vpc_id
+  tags        = local.common_tags
+}
+
+resource "aws_security_group_rule" "lambda_pr_review_egress_internet" {
+  count = var.env == "staging" ? 1 : 0
+
+  description       = "Egress lambda PR review env to the internet"
+  type              = "egress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  security_group_id = aws_security_group.lambda_pr_review[0].id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+resource "aws_security_group_rule" "lambda_pr_review_egress_idp_ecs" {
+  count = var.env == "staging" ? 1 : 0
+
+  description              = "Egress from lambda PR review env to idp ECS task"
+  type                     = "egress"
+  to_port                  = 8080
+  from_port                = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.lambda_pr_review[0].id
+  source_security_group_id = aws_security_group.idp_ecs.id
+}
+
+resource "aws_security_group_rule" "idp_ecs_ingress_lambda_pr_review" {
+  count = var.env == "staging" ? 1 : 0
+
+  description              = "Ingress to idp ECS task from lambda PR review env"
+  type                     = "ingress"
+  to_port                  = 8080
+  from_port                = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.idp_ecs.id
+  source_security_group_id = aws_security_group.lambda_pr_review[0].id
+}
