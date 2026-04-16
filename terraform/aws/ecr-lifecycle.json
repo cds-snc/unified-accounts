@@ -18,7 +18,8 @@
             "rulePriority": 10,
             "description": "Expire images archived for more than 90 days",
             "selection": {
-                "tagStatus": "any",
+                "tagStatus": "tagged",
+                "tagPatternList": ["*"],
                 "storageClass": "archive",
                 "countType": "sinceImageTransitioned",
                 "countUnit": "days",
