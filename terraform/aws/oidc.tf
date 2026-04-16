@@ -159,7 +159,8 @@ data "aws_iam_policy_document" "pr_review_deploy" {
 # Delete unused PR review environment resources
 #
 resource "aws_iam_role_policy_attachment" "pr_review_delete_unused" {
-  count      = var.env == "staging" ? 1 : 0
+  count = var.env == "staging" ? 1 : 0
+
   role       = local.pr_review_delete_unused
   policy_arn = aws_iam_policy.pr_review_delete_unused[0].arn
 
@@ -167,7 +168,8 @@ resource "aws_iam_role_policy_attachment" "pr_review_delete_unused" {
 }
 
 resource "aws_iam_policy" "pr_review_delete_unused" {
-  count  = var.env == "staging" ? 1 : 0
+  count = var.env == "staging" ? 1 : 0
+
   name   = local.pr_review_delete_unused
   path   = "/"
   policy = data.aws_iam_policy_document.pr_review_delete_unused[0].json
@@ -225,7 +227,8 @@ data "aws_iam_policy_document" "pr_review_delete_unused" {
 # Get env vars from IdP login task definition for PR review environments
 #
 resource "aws_iam_role_policy_attachment" "pr_review_get_vars" {
-  count      = var.env == "staging" ? 1 : 0
+  count = var.env == "staging" ? 1 : 0
+
   role       = local.pr_review_get_vars
   policy_arn = aws_iam_policy.pr_review_get_vars[0].arn
 
@@ -233,7 +236,8 @@ resource "aws_iam_role_policy_attachment" "pr_review_get_vars" {
 }
 
 resource "aws_iam_policy" "pr_review_get_vars" {
-  count  = var.env == "staging" ? 1 : 0
+  count = var.env == "staging" ? 1 : 0
+
   name   = local.pr_review_get_vars
   path   = "/"
   policy = data.aws_iam_policy_document.pr_review_get_vars[0].json
