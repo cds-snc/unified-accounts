@@ -1,4 +1,7 @@
 locals {
+  excluded_bot_control_rules = [
+    "SignalNonBrowserUserAgent", # Blocks API access
+  ]
   excluded_common_rules = [
     "EC2MetaDataSSRF_BODY",          # Rule is blocking IdP OIDC app creation
     "EC2MetaDataSSRF_QUERYARGUMENTS" # Rule is blocking IdP OIDC login
@@ -464,10 +467,13 @@ resource "aws_wafv2_web_acl_rule" "aws_managed_rules_bot_control_rule_set" {
         }
       }
 
-      rule_action_override {
-        name = "SignalNonBrowserUserAgent"
-        action_to_use {
-          count {}
+      dynamic "rule_action_override" {
+        for_each = local.excluded_bot_control_rules
+        content {
+          name = rule_action_override.value
+          action_to_use {
+            count {}
+          }
         }
       }
     }

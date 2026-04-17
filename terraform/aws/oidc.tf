@@ -273,7 +273,7 @@ data "aws_iam_policy_document" "pr_review_get_vars" {
       "ecs:DescribeTaskDefinition"
     ]
     resources = [
-      "arn:aws:ecs:${var.region}:${var.account_id}:task-definition/*"
+      "*"
     ]
   }
 
