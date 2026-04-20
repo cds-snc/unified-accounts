@@ -131,7 +131,20 @@ module "idp_ecs" {
   container_port                      = 8080
   container_environment               = local.idp_container_env
   container_secrets                   = local.idp_container_secrets
-  container_read_only_root_filesystem = false
+  container_read_only_root_filesystem = true
+
+  container_linux_parameters = {
+    capabilities = {
+      add  = []
+      drop = ["ALL"]
+    }
+    tmpfs = [
+      {
+        containerPath = "/tmp"
+        size          = 64
+      }
+    ]
+  }
 
   task_exec_role_policy_documents = [
     data.aws_iam_policy_document.ecs_task_ssm_parameters.json,
@@ -207,7 +220,20 @@ module "login_ecs" {
   container_port                      = 3000
   container_environment               = local.login_container_env
   container_secrets                   = local.login_container_secrets
-  container_read_only_root_filesystem = false
+  container_read_only_root_filesystem = true
+
+  container_linux_parameters = {
+    capabilities = {
+      add  = []
+      drop = ["ALL"]
+    }
+    tmpfs = [
+      {
+        containerPath = "/app/.next/cache"
+        size          = 128
+      }
+    ]
+  }
 
   task_exec_role_policy_documents = [
     data.aws_iam_policy_document.ecs_task_ssm_parameters.json,
