@@ -11,7 +11,7 @@ locals {
 # 
 module "github_workflow_roles" {
   count  = var.env == "staging" ? 1 : 0
-  source = "github.com/cds-snc/terraform-modules//gh_oidc_role?ref=v10.11.3"
+  source = "github.com/cds-snc/terraform-modules//gh_oidc_role?ref=v10.11.4"
 
   roles = [
     {

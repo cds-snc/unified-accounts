@@ -106,7 +106,7 @@ locals {
 }
 
 module "idp_ecs" {
-  source = "github.com/cds-snc/terraform-modules//ecs?ref=v10.11.3"
+  source = "github.com/cds-snc/terraform-modules//ecs?ref=v10.11.4"
 
   cluster_name     = "idp"
   service_name     = "idp"
@@ -183,7 +183,7 @@ module "idp_ecs" {
 }
 
 module "login_ecs" {
-  source = "github.com/cds-snc/terraform-modules//ecs?ref=v10.11.3"
+  source = "github.com/cds-snc/terraform-modules//ecs?ref=v10.11.4"
 
   create_cluster   = false
   cluster_name     = "idp"
