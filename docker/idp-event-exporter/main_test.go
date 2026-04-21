@@ -1,0 +1,229 @@
+package main
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+)
+
+// ---------------------------------------------------------------------------
+// computeWindow
+// ---------------------------------------------------------------------------
+
+func TestComputeWindow_AlignsTo15MinBoundary(t *testing.T) {
+	now := time.Date(2026, 4, 21, 15, 22, 45, 0, time.UTC)
+	start, end := computeWindow(now, 15)
+	wantStart := time.Date(2026, 4, 21, 15, 0, 0, 0, time.UTC)
+	wantEnd := time.Date(2026, 4, 21, 15, 15, 0, 0, time.UTC)
+	if !start.Equal(wantStart) {
+		t.Errorf("start: got %v, want %v", start, wantStart)
+	}
+	if !end.Equal(wantEnd) {
+		t.Errorf("end: got %v, want %v", end, wantEnd)
+	}
+}
+
+func TestComputeWindow_AlignsTo30MinBoundary(t *testing.T) {
+	now := time.Date(2026, 4, 21, 15, 45, 0, 0, time.UTC)
+	start, end := computeWindow(now, 30)
+	wantStart := time.Date(2026, 4, 21, 15, 0, 0, 0, time.UTC)
+	wantEnd := time.Date(2026, 4, 21, 15, 30, 0, 0, time.UTC)
+	if !start.Equal(wantStart) {
+		t.Errorf("start: got %v, want %v", start, wantStart)
+	}
+	if !end.Equal(wantEnd) {
+		t.Errorf("end: got %v, want %v", end, wantEnd)
+	}
+}
+
+func TestComputeWindow_ExactlyOnBoundary(t *testing.T) {
+	// At exactly 15:15:00 the completed window is 15:00–15:15.
+	now := time.Date(2026, 4, 21, 15, 15, 0, 0, time.UTC)
+	start, end := computeWindow(now, 15)
+	wantStart := time.Date(2026, 4, 21, 15, 0, 0, 0, time.UTC)
+	wantEnd := time.Date(2026, 4, 21, 15, 15, 0, 0, time.UTC)
+	if !start.Equal(wantStart) {
+		t.Errorf("start: got %v, want %v", start, wantStart)
+	}
+	if !end.Equal(wantEnd) {
+		t.Errorf("end: got %v, want %v", end, wantEnd)
+	}
+}
+
+func TestComputeWindow_DurationEqualsWindowMinutes(t *testing.T) {
+	now := time.Date(2026, 4, 21, 9, 7, 0, 0, time.UTC)
+	start, end := computeWindow(now, 15)
+	if end.Sub(start) != 15*time.Minute {
+		t.Errorf("duration: got %v, want 15m", end.Sub(start))
+	}
+}
+
+func TestComputeWindow_5MinuteWindow(t *testing.T) {
+	now := time.Date(2026, 4, 21, 15, 8, 30, 0, time.UTC)
+	start, end := computeWindow(now, 5)
+	wantStart := time.Date(2026, 4, 21, 15, 0, 0, 0, time.UTC)
+	wantEnd := time.Date(2026, 4, 21, 15, 5, 0, 0, time.UTC)
+	if !start.Equal(wantStart) {
+		t.Errorf("start: got %v, want %v", start, wantStart)
+	}
+	if !end.Equal(wantEnd) {
+		t.Errorf("end: got %v, want %v", end, wantEnd)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// formatTimestamp
+// ---------------------------------------------------------------------------
+
+func TestFormatTimestamp_RFC3339(t *testing.T) {
+	dt := time.Date(2026, 4, 21, 15, 0, 0, 0, time.UTC)
+	got := formatTimestamp(dt)
+	want := "2026-04-21T15:00:00.000000Z"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestFormatTimestamp_ZeroPadsSingleDigitFields(t *testing.T) {
+	dt := time.Date(2026, 1, 5, 3, 4, 9, 0, time.UTC)
+	got := formatTimestamp(dt)
+	want := "2026-01-05T03:04:09.000000Z"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// fetchEvents
+// ---------------------------------------------------------------------------
+
+func TestFetchEvents_SinglePageResult(t *testing.T) {
+	events := []map[string]any{
+		{"sequence": 1, "creationDate": "2026-04-21T15:05:00.000000Z"},
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"events": events})
+	}))
+	defer srv.Close()
+
+	windowStart := time.Date(2026, 4, 21, 15, 0, 0, 0, time.UTC)
+	got, err := fetchEvents(t.Context(), srv.Client(), srv.URL, "test-token", windowStart)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 1 {
+		t.Errorf("got %d events, want 1", len(got))
+	}
+}
+
+func TestFetchEvents_EmptyResponse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"events": []any{}})
+	}))
+	defer srv.Close()
+
+	windowStart := time.Date(2026, 4, 21, 15, 0, 0, 0, time.UTC)
+	got, err := fetchEvents(t.Context(), srv.Client(), srv.URL, "test-token", windowStart)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("got %d events, want 0", len(got))
+	}
+}
+
+func TestFetchEvents_BearerTokenInHeader(t *testing.T) {
+	var gotAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"events": []any{}})
+	}))
+	defer srv.Close()
+
+	windowStart := time.Date(2026, 4, 21, 15, 0, 0, 0, time.UTC)
+	_, err := fetchEvents(t.Context(), srv.Client(), srv.URL, "my-secret-token", windowStart)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotAuth != "Bearer my-secret-token" {
+		t.Errorf("Authorization header: got %q, want %q", gotAuth, "Bearer my-secret-token")
+	}
+}
+
+func TestFetchEvents_ContentTypeHeader(t *testing.T) {
+	var gotCT string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotCT = r.Header.Get("Content-Type")
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"events": []any{}})
+	}))
+	defer srv.Close()
+
+	windowStart := time.Date(2026, 4, 21, 15, 0, 0, 0, time.UTC)
+	_, err := fetchEvents(t.Context(), srv.Client(), srv.URL, "token", windowStart)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotCT != "application/json" {
+		t.Errorf("Content-Type: got %q, want %q", gotCT, "application/json")
+	}
+}
+
+func TestFetchEvents_FromParamInRequestBody(t *testing.T) {
+	var gotFrom string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		gotFrom, _ = body["from"].(string)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"events": []any{}})
+	}))
+	defer srv.Close()
+
+	windowStart := time.Date(2026, 4, 21, 15, 0, 0, 0, time.UTC)
+	_, err := fetchEvents(t.Context(), srv.Client(), srv.URL, "token", windowStart)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := "2026-04-21T15:00:00.000000Z"
+	if gotFrom != want {
+		t.Errorf("from param: got %q, want %q", gotFrom, want)
+	}
+}
+
+func TestFetchEvents_TrailingSlashStripped(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"events": []any{}})
+	}))
+	defer srv.Close()
+
+	windowStart := time.Date(2026, 4, 21, 15, 0, 0, 0, time.UTC)
+	_, err := fetchEvents(t.Context(), srv.Client(), srv.URL+"/", "token", windowStart)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotPath != "/events/_search" {
+		t.Errorf("path: got %q, want %q", gotPath, "/events/_search")
+	}
+}
+
+func TestFetchEvents_HTTPError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+	}))
+	defer srv.Close()
+
+	windowStart := time.Date(2026, 4, 21, 15, 0, 0, 0, time.UTC)
+	_, err := fetchEvents(t.Context(), srv.Client(), srv.URL, "bad-token", windowStart)
+	if err == nil {
+		t.Fatal("expected error for HTTP 401, got nil")
+	}
+}
