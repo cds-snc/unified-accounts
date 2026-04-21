@@ -138,12 +138,6 @@ module "idp_ecs" {
       add  = []
       drop = ["ALL"]
     }
-    tmpfs = [
-      {
-        containerPath = "/tmp"
-        size          = 64
-      }
-    ]
   }
 
   task_exec_role_policy_documents = [
