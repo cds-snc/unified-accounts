@@ -1,5 +1,6 @@
 locals {
   excluded_bot_control_rules = [
+    "CategoryHttpLibrary",       # Blocks OIDC auth flow
     "SignalNonBrowserUserAgent", # Blocks API access
   ]
   excluded_common_rules = [
