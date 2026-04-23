@@ -107,6 +107,12 @@ variable "idp_database_instance_count" {
   type        = number
 }
 
+variable "idp_event_exporter_bearer_token" {
+  description = "The bearer token for the IdP event exporter to authenticate with the IdP API."
+  type        = string
+  sensitive   = true
+}
+
 variable "idp_loginclient_machine_username" {
   description = "The machine username for the IdP login client."
   type        = string
