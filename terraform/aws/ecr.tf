@@ -43,3 +43,17 @@ resource "aws_ecr_lifecycle_policy" "idp_login_pr" {
   repository = aws_ecr_repository.idp_login_pr[0].name
   policy     = file("${path.module}/ecr-lifecycle.json")
 }
+
+resource "aws_ecr_repository" "idp_event_exporter" {
+  name                 = "idp-event-exporter"
+  image_tag_mutability = "IMMUTABLE"
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+  tags = local.common_tags
+}
+
+resource "aws_ecr_lifecycle_policy" "idp_event_exporter" {
+  repository = aws_ecr_repository.idp_event_exporter.name
+  policy     = file("${path.module}/ecr-lifecycle.json")
+}
