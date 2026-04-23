@@ -54,7 +54,7 @@ module "event_exporter_lambda" {
   ]
 
   lambda_environment_variables = {
-    S3_BUCKET              = module.event_exporter_s3.bucket_id
+    S3_BUCKET              = module.event_exporter_s3.s3_bucket_id
     ZITADEL_TOKEN_SSM_PATH = aws_ssm_parameter.idp_event_exporter_bearer_token.name
     ZITADEL_URL            = "http://idp.${aws_service_discovery_private_dns_namespace.idp_ecs.name}:8080"
     WINDOW_MINUTES         = 15
@@ -66,7 +66,7 @@ module "event_exporter_lambda" {
   }
 
   create_ecr_repository = false
-  s3_arn_write_path     = "${module.event_exporter_s3.bucket_arn}/*"
+  s3_arn_write_path     = "${module.event_exporter_s3.s3_bucket_arn}/*"
   billing_tag_value     = var.billing_tag_value
 }
 
