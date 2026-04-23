@@ -50,8 +50,7 @@ var (
 	initErr   error
 )
 
-// Bearer token cached after the first SSM read so subsequent warm invocations
-// skip the SSM round-trip.
+// Bearer token cached after the first SSM read
 var (
 	tokenMu     sync.Mutex
 	cachedToken string
