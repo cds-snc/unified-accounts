@@ -418,13 +418,13 @@ resource "aws_security_group_rule" "idp_ecs_ingress_idp_event_exporter" {
 }
 
 resource "aws_security_group_rule" "idp_event_exporter_egress_s3" {
-  description              = "Egress from idp event exporter to S3"
-  type                     = "egress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.idp_event_exporter.id
-  prefix_list_ids         = [data.aws_prefix_list.s3.id]
+  description       = "Egress from idp event exporter to S3"
+  type              = "egress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  security_group_id = aws_security_group.idp_event_exporter.id
+  prefix_list_ids   = [data.aws_prefix_list.s3.id]
 }
 
 resource "aws_security_group_rule" "idp_event_exporter_egress_vpc_endpoint" {
