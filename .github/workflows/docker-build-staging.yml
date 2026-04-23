@@ -71,6 +71,7 @@ jobs:
       run: |
         docker buildx build \
           --push \
+          --provenance=false \
           --platform linux/arm64 \
           --tag "${{ env.REGISTRY_PREFIX }}/${{ matrix.image }}:sha-$GITHUB_SHA" \
           --file ./docker/${{ matrix.image }}/Dockerfile \
