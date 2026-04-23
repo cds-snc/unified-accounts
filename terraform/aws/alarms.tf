@@ -11,7 +11,7 @@ locals {
 
   # IdP Login errors
   idp_login_error_filters = [
-    "Error"
+    "error"
   ]
   idp_login_skip_filters = [
     "already_exists",
