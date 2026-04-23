@@ -5,7 +5,6 @@ on:
     workflows:
       - "Docker build and push Staging"
       - "Docker deploy Staging"
-      - "Docker SBOM Staging"
       - "Terraform Apply Staging"
       - "Terraform Drift Check Staging"
     types:

@@ -13,6 +13,11 @@ jobs:
   docker-sbom:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-24.04-arm
+    strategy:
+      matrix:
+        image:
+          - idp
+          - idp-event-exporter
     
     steps:
     - name: Audit DNS requests
@@ -24,6 +29,17 @@ jobs:
         DNS_PROXY_SAFELIST: "${{ vars.DNS_PROXY_SAFELIST }}"
         DNS_PROXY_WILDCARDGREEDY: "true"
   
+    - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+      id: changes
+      with:
+        filters: |
+          docker:
+            - './docker/${{ matrix.image }}/**'
+
+    - name: Exit if no changes
+      if: steps.changes.outputs.docker == 'false'
+      run: exit 0
+
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
@@ -33,16 +49,16 @@ jobs:
       run: |
         docker build \
           --platform linux/arm64 \
-          --tag idp:latest \
-          --file ./docker/idp/Dockerfile \
-          ./docker/idp
+          --tag "${{ matrix.image }}:latest" \
+          --file ./docker/${{ matrix.image }}/Dockerfile \
+          ./docker/${{ matrix.image }}
 
     - name: Generate Docker image SBOM
       uses: cds-snc/security-tools/.github/actions/generate-sbom@837a88b6337d4842543184c8eac97a8adac8f302 # v4.0.3
       env:
         TRIVY_DB_REPOSITORY: ${{ vars.TRIVY_DB_REPOSITORY }}
       with:
-        docker_image: "idp"
-        dockerfile_path: "./docker/idp/Dockerfile"
+        docker_image: "${{ matrix.image }}"
+        dockerfile_path: "./docker/${{ matrix.image }}/Dockerfile"
         token: "${{ secrets.GITHUB_TOKEN }}"
         platform: "linux/arm64"
