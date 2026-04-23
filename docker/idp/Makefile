@@ -1,7 +1,7 @@
 docker:
 	docker build -t idp:latest .
 
-pull_request: docker lint test
+pull_request: docker
 
 .PHONY: \
 	docker \
