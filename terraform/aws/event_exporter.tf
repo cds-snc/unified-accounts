@@ -60,7 +60,7 @@ module "event_exporter_lambda" {
     WINDOW_MINUTES         = 15
   }
 
-  vpc_config = {
+  lambda_vpc_config = {
     subnet_ids         = module.idp_vpc.private_subnet_ids
     security_group_ids = [aws_security_group.idp_event_exporter.id]
   }
