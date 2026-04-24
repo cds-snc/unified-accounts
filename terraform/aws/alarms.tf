@@ -28,6 +28,13 @@ locals {
   ]
   idp_login_error_metric_pattern = "[(w=\"*${join("*\" || w=\"*", local.idp_login_error_filters)}*\") && w!=\"*${join("*\" && w!=\"*", local.idp_login_skip_filters)}*\"]"
 
+  # IdP Event Exporter errors
+  idp_event_exporter_error_filters = [
+    "error",
+    "exception"
+  ]
+  idp_event_exporter_error_metric_pattern = "[(w=\"*${join("*\" || w=\"*", local.idp_event_exporter_error_filters)}*\")]"
+
   # ECS and ALB thresholds
   threshold_ecs_high_cpu     = 80
   threshold_ecs_high_memory  = 80
@@ -51,6 +58,11 @@ locals {
       error_filters  = local.idp_login_error_filters
       pattern        = local.idp_login_error_metric_pattern
       log_group_name = module.login_ecs.cloudwatch_log_group_name
+    }
+    idp_event_exporter = {
+      error_filters  = local.idp_event_exporter_error_filters
+      pattern        = local.idp_event_exporter_error_metric_pattern
+      log_group_name = module.event_exporter_lambda.lambda_function_cloudwatch_log_group_name
     }
   }
 }
@@ -229,6 +241,26 @@ resource "aws_cloudwatch_metric_alarm" "error_logged" {
   ok_actions    = [aws_sns_topic.cloudwatch_alert_ok.arn]
 
   tags = local.common_tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "idp_event_exporter_lambda_errors" {
+  alarm_name          = "${module.event_exporter_lambda.lambda_function_name}-lambda-errors"
+  alarm_description   = "`${module.event_exporter_lambda.lambda_function_name}` Lambda failed invocation over 15 minutes"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "1"
+  metric_name         = "Errors"
+  namespace           = "AWS/Lambda"
+  period              = "900"
+  statistic           = "Sum"
+  threshold           = "0"
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    FunctionName = module.event_exporter_lambda.lambda_function_name
+  }
+
+  alarm_actions = [aws_sns_topic.cloudwatch_alert_warning.arn]
+  ok_actions    = [aws_sns_topic.cloudwatch_alert_ok.arn]
 }
 
 #

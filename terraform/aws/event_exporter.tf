@@ -40,7 +40,7 @@ module "event_exporter_s3" {
  * Lambda function to export events to S3
  */
 module "event_exporter_lambda" {
-  source = "github.com/cds-snc/terraform-modules//lambda_schedule?ref=v11.0.0"
+  source = "github.com/cds-snc/terraform-modules//lambda_schedule?ref=v11.0.1"
 
   lambda_name                = "idp-event-exporter"
   lambda_schedule_expression = "cron(0/15 * * * ? *)" # Every 15 minutes
