@@ -5,6 +5,7 @@
 //	ZITADEL_URL            - Base URL of the Zitadel instance
 //	S3_BUCKET              - Destination S3 bucket name
 //	ZITADEL_TOKEN_SSM_PATH - SSM Parameter Store path for the Zitadel Bearer token
+//  ZITADEL_HOST           - Host header value for Zitadel API requests
 //
 // Optional environment variables:
 //
@@ -40,6 +41,7 @@ var (
 	zitadelURL          string
 	s3Bucket            string
 	zitadelTokenSSMPath string
+	zitadelHost         string
 	windowMinutes       int
 )
 
@@ -69,6 +71,10 @@ func init() {
 	zitadelTokenSSMPath = os.Getenv("ZITADEL_TOKEN_SSM_PATH")
 	if zitadelTokenSSMPath == "" {
 		missing = append(missing, "ZITADEL_TOKEN_SSM_PATH")
+	}
+	zitadelHost = os.Getenv("ZITADEL_HOST")
+	if zitadelHost == "" {
+		missing = append(missing, "ZITADEL_HOST")
 	}
 	if len(missing) > 0 {
 		initErr = fmt.Errorf("required environment variables not set: %s", strings.Join(missing, ", "))
@@ -163,7 +169,7 @@ type eventSearchResponse struct {
 
 // fetchEvents fetches all events from the Zitadel Admin API on or after windowStart.
 func fetchEvents(ctx context.Context, client *http.Client, baseURL, token string, windowStart time.Time) ([]json.RawMessage, error) {
-	url := strings.TrimRight(baseURL, "/") + "/events/_search"
+	url := strings.TrimRight(baseURL, "/") + "/admin/v1/events/_search"
 	fromStr := formatTimestamp(windowStart)
 
 	reqBody := eventSearchRequest{From: fromStr, Asc: true}
@@ -180,6 +186,7 @@ func fetchEvents(ctx context.Context, client *http.Client, baseURL, token string
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
+	req.Host = zitadelHost
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -206,22 +213,25 @@ func fetchEvents(ctx context.Context, client *http.Client, baseURL, token string
 	return result.Events, nil
 }
 
-// saveToS3 serialises events and writes them to the given key in bucket.
+// saveToS3 serialises events as newline-delimited JSON and writes it to the
+// given key in bucket.
 func saveToS3(ctx context.Context, bucket, key string, events []json.RawMessage) error {
 	log.Printf("Saving %d event(s) to s3://%s/%s", len(events), bucket, key)
 
-	type payload struct {
-		Events []json.RawMessage `json:"events"`
-	}
-	data, err := json.Marshal(payload{Events: events})
-	if err != nil {
-		return fmt.Errorf("marshalling events payload: %w", err)
+	var buf bytes.Buffer
+	for _, e := range events {
+		b, err := json.Marshal(json.RawMessage(e))
+		if err != nil {
+			return fmt.Errorf("marshalling event: %w", err)
+		}
+		buf.Write(b)
+		buf.WriteByte('\n')
 	}
 
-	_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
+	_, err := s3Client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(key),
-		Body:        bytes.NewReader(data),
+		Body:        bytes.NewReader(buf.Bytes()),
 		ContentType: aws.String("application/json"),
 	})
 	if err != nil {
@@ -264,18 +274,24 @@ func handler(ctx context.Context) (response, error) {
 		return response{}, fmt.Errorf("fetching events: %w", err)
 	}
 
+	result := response{
+		StatusCode:  200,
+		EventsCount: len(events),
+		WindowStart: windowStart.Format(time.RFC3339),
+		WindowEnd:   windowEnd.Format(time.RFC3339),
+	}
+
+	if len(events) == 0 {
+		log.Println("No events in window, skipping S3 upload")
+		log.Printf("Audit export complete: %+v", result)
+		return result, nil
+	}
+
 	s3Key := fmt.Sprintf("events/%s.json", windowStart.Format("2006/01/02/15-04-05"))
 	if err := saveToS3(ctx, s3Bucket, s3Key, events); err != nil {
 		return response{}, fmt.Errorf("saving to S3: %w", err)
 	}
-
-	result := response{
-		StatusCode:  200,
-		EventsCount: len(events),
-		S3Key:       s3Key,
-		WindowStart: windowStart.Format(time.RFC3339),
-		WindowEnd:   windowEnd.Format(time.RFC3339),
-	}
+	result.S3Key = s3Key
 	log.Printf("Audit export complete: %+v", result)
 	return result, nil
 }

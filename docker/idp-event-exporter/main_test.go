@@ -210,8 +210,8 @@ func TestFetchEvents_TrailingSlashStripped(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gotPath != "/events/_search" {
-		t.Errorf("path: got %q, want %q", gotPath, "/events/_search")
+	if gotPath != "/admin/v1/events/_search" {
+		t.Errorf("path: got %q, want %q", gotPath, "/admin/v1/events/_search")
 	}
 }
 
@@ -225,5 +225,89 @@ func TestFetchEvents_HTTPError(t *testing.T) {
 	_, err := fetchEvents(t.Context(), srv.Client(), srv.URL, "bad-token", windowStart)
 	if err == nil {
 		t.Fatal("expected error for HTTP 401, got nil")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// handler – no events → no S3 upload
+// ---------------------------------------------------------------------------
+
+// setHandlerGlobals overwrites the package-level globals used by handler and
+// returns a restore function to be deferred by the caller.
+func setHandlerGlobals(t *testing.T, zURL, bucket, token string) func() {
+	t.Helper()
+	origURL := zitadelURL
+	origBucket := s3Bucket
+	origS3 := s3Client
+	origInitErr := initErr
+	origWM := windowMinutes
+
+	tokenMu.Lock()
+	origToken := cachedToken
+	cachedToken = token
+	tokenMu.Unlock()
+
+	zitadelURL = zURL
+	s3Bucket = bucket
+	s3Client = nil // will panic if saveToS3 is called, acting as an assertion
+	initErr = nil
+	windowMinutes = 15
+
+	return func() {
+		zitadelURL = origURL
+		s3Bucket = origBucket
+		s3Client = origS3
+		initErr = origInitErr
+		windowMinutes = origWM
+		tokenMu.Lock()
+		cachedToken = origToken
+		tokenMu.Unlock()
+	}
+}
+
+func TestHandler_NoEvents_SkipsS3Upload(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"events": []any{}})
+	}))
+	defer srv.Close()
+
+	restore := setHandlerGlobals(t, srv.URL, "test-bucket", "test-token")
+	defer restore()
+
+	resp, err := handler(t.Context())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.S3Key != "" {
+		t.Errorf("S3Key: got %q, want empty (no upload expected when there are no events)", resp.S3Key)
+	}
+	if resp.EventsCount != 0 {
+		t.Errorf("EventsCount: got %d, want 0", resp.EventsCount)
+	}
+	if resp.StatusCode != 200 {
+		t.Errorf("StatusCode: got %d, want 200", resp.StatusCode)
+	}
+}
+
+func TestHandler_NoEvents_WindowFieldsPopulated(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"events": []any{}})
+	}))
+	defer srv.Close()
+
+	restore := setHandlerGlobals(t, srv.URL, "test-bucket", "test-token")
+	defer restore()
+
+	resp, err := handler(t.Context())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.WindowStart == "" {
+		t.Error("WindowStart: got empty, want populated")
+	}
+	if resp.WindowEnd == "" {
+		t.Error("WindowEnd: got empty, want populated")
 	}
 }
