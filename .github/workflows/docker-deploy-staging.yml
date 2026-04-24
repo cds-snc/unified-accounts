@@ -19,6 +19,12 @@ jobs:
   docker-deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image:
+          - idp
+          - idp-event-exporter
+
     steps:
     - name: Audit DNS requests
       uses: cds-snc/dns-proxy-action@9ad793100229573be3f5ba78cc69ec523f2c8b7e # v1.1.0
@@ -29,14 +35,24 @@ jobs:
         DNS_PROXY_SAFELIST: "${{ vars.DNS_PROXY_SAFELIST }}"
         DNS_PROXY_WILDCARDGREEDY: "true"
 
-    - name: Configure aws credentials using OIDC
+    - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
       with:
         role-to-assume: arn:aws:iam::${{ vars.STAGING_AWS_ACCOUNT_ID }}:role/platform-unified-accounts-apply 
         role-session-name: DeployContainer
         aws-region: ${{ env.AWS_REGION }}
 
+    - name: Update Lambda
+      if: matrix.image == 'idp-event-exporter'
+      run: |
+        aws lambda update-function-code \
+          --function-name ${{ matrix.image }} \
+          --image-uri $REGISTRY_PREFIX/${{ matrix.image }}:sha-${{ env.GITHUB_SHA }} > /dev/null 2>&1
+        aws lambda wait function-updated \
+          --function-name ${{ matrix.image }}
+
     - name: Update ECS task image
+      if: matrix.image == 'idp'
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@77954e213ba1f9f9cb016b86a1d4f6fcdea0d57e # v1.8.4
       with:
@@ -45,6 +61,7 @@ jobs:
         image: ${{ env.REGISTRY_PREFIX }}/idp:sha-${{ env.GITHUB_SHA }}
 
     - name: Deploy updated ECS task
+      if: matrix.image == 'idp'
       uses: aws-actions/amazon-ecs-deploy-task-definition@fc8fc60f3a60ffd500fcb13b209c59d221ac8c8c # v2.6.1
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
@@ -54,6 +71,7 @@ jobs:
         propagate-tags: SERVICE
 
     - name: Update SSM parameter for deployed image
+      if: matrix.image == 'idp'
       run: |
         aws ssm put-parameter \
           --name "/ecs/${{ env.ECS_CLUSTER }}/idp/container-image" \
