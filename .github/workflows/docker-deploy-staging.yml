@@ -21,9 +21,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        image:
-          - idp
-          - idp-event-exporter
+        service:
+          - name: idp
+            type: ecs
+          - name: idp-event-exporter
+            type: lambda
 
     steps:
     - name: Audit DNS requests
@@ -43,38 +45,38 @@ jobs:
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Update Lambda
-      if: matrix.image == 'idp-event-exporter'
+      if: matrix.service.type == 'lambda'
       run: |
         aws lambda update-function-code \
-          --function-name ${{ matrix.image }} \
-          --image-uri $REGISTRY_PREFIX/${{ matrix.image }}:sha-${{ env.GITHUB_SHA }} > /dev/null 2>&1
+          --function-name ${{ matrix.service.name }} \
+          --image-uri $REGISTRY_PREFIX/${{ matrix.service.name }}:sha-${{ env.GITHUB_SHA }} > /dev/null 2>&1
         aws lambda wait function-updated \
-          --function-name ${{ matrix.image }} > /dev/null 2>&1
+          --function-name ${{ matrix.service.name }} > /dev/null 2>&1
 
     - name: Update ECS task image
-      if: matrix.image == 'idp'
+      if: matrix.service.type == 'ecs'
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@77954e213ba1f9f9cb016b86a1d4f6fcdea0d57e # v1.8.4
       with:
-        task-definition-family: ${{ matrix.image }}
-        container-name: ${{ matrix.image }}
-        image: ${{ env.REGISTRY_PREFIX }}/${{ matrix.image }}:sha-${{ env.GITHUB_SHA }}
+        task-definition-family: ${{ matrix.service.name }}
+        container-name: ${{ matrix.service.name }}
+        image: ${{ env.REGISTRY_PREFIX }}/${{ matrix.service.name }}:sha-${{ env.GITHUB_SHA }}
 
     - name: Deploy updated ECS task
-      if: matrix.image == 'idp'
+      if: matrix.service.type == 'ecs'
       uses: aws-actions/amazon-ecs-deploy-task-definition@fc8fc60f3a60ffd500fcb13b209c59d221ac8c8c # v2.6.1
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: ${{ matrix.image }}
+        service: ${{ matrix.service.name }}
         cluster: ${{ env.ECS_CLUSTER }}
         wait-for-service-stability: true
         propagate-tags: SERVICE
 
     - name: Update SSM parameter for deployed image
-      if: matrix.image == 'idp'
+      if: matrix.service.type == 'ecs'
       run: |
         aws ssm put-parameter \
-          --name "/ecs/${{ env.ECS_CLUSTER }}/${{ matrix.image }}/container-image" \
-          --value "${{ env.REGISTRY_PREFIX }}/${{ matrix.image }}:sha-${{ env.GITHUB_SHA }}" \
+          --name "/ecs/${{ env.ECS_CLUSTER }}/${{ matrix.service.name }}/container-image" \
+          --value "${{ env.REGISTRY_PREFIX }}/${{ matrix.service.name }}:sha-${{ env.GITHUB_SHA }}" \
           --type "String" \
           --overwrite
