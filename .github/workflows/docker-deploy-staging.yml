@@ -49,23 +49,23 @@ jobs:
           --function-name ${{ matrix.image }} \
           --image-uri $REGISTRY_PREFIX/${{ matrix.image }}:sha-${{ env.GITHUB_SHA }} > /dev/null 2>&1
         aws lambda wait function-updated \
-          --function-name ${{ matrix.image }}
+          --function-name ${{ matrix.image }} > /dev/null 2>&1
 
     - name: Update ECS task image
       if: matrix.image == 'idp'
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@77954e213ba1f9f9cb016b86a1d4f6fcdea0d57e # v1.8.4
       with:
-        task-definition-family: idp
-        container-name: idp
-        image: ${{ env.REGISTRY_PREFIX }}/idp:sha-${{ env.GITHUB_SHA }}
+        task-definition-family: ${{ matrix.image }}
+        container-name: ${{ matrix.image }}
+        image: ${{ env.REGISTRY_PREFIX }}/${{ matrix.image }}:sha-${{ env.GITHUB_SHA }}
 
     - name: Deploy updated ECS task
       if: matrix.image == 'idp'
       uses: aws-actions/amazon-ecs-deploy-task-definition@fc8fc60f3a60ffd500fcb13b209c59d221ac8c8c # v2.6.1
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: idp
+        service: ${{ matrix.image }}
         cluster: ${{ env.ECS_CLUSTER }}
         wait-for-service-stability: true
         propagate-tags: SERVICE
@@ -74,7 +74,7 @@ jobs:
       if: matrix.image == 'idp'
       run: |
         aws ssm put-parameter \
-          --name "/ecs/${{ env.ECS_CLUSTER }}/idp/container-image" \
-          --value "${{ env.REGISTRY_PREFIX }}/idp:sha-${{ env.GITHUB_SHA }}" \
+          --name "/ecs/${{ env.ECS_CLUSTER }}/${{ matrix.image }}/container-image" \
+          --value "${{ env.REGISTRY_PREFIX }}/${{ matrix.image }}:sha-${{ env.GITHUB_SHA }}" \
           --type "String" \
           --overwrite
