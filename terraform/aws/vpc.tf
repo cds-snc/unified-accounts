@@ -34,7 +34,7 @@ resource "aws_service_discovery_private_dns_namespace" "idp_ecs" {
 #
 
 resource "aws_vpc_endpoint" "interface" {
-  for_each = local.vpc_interface_endpoints
+  for_each = local.vpc_endpoints_interface
 
   vpc_id              = module.idp_vpc.vpc_id
   vpc_endpoint_type   = "Interface"
@@ -46,7 +46,7 @@ resource "aws_vpc_endpoint" "interface" {
 }
 
 resource "aws_vpc_endpoint" "gateway" {
-  for_each = local.vpc_gateway_endpoints
+  for_each = local.vpc_endpoints_gateway
 
   vpc_id            = module.idp_vpc.vpc_id
   vpc_endpoint_type = "Gateway"
