@@ -33,16 +33,31 @@ resource "aws_service_discovery_private_dns_namespace" "idp_ecs" {
 # VPC endpoints
 #
 
-resource "aws_vpc_endpoint" "ssm" {
+resource "aws_vpc_endpoint" "interface" {
+  for_each = local.vpc_endpoints_interface
+
   vpc_id              = module.idp_vpc.vpc_id
   vpc_endpoint_type   = "Interface"
-  service_name        = "com.amazonaws.${var.region}.ssm"
+  service_name        = "com.amazonaws.${var.region}.${each.value}"
   private_dns_enabled = true
-  security_group_ids = [
-    aws_security_group.vpc_endpoint.id,
-  ]
-  subnet_ids = module.idp_vpc.private_subnet_ids
-  tags       = local.common_tags
+  security_group_ids  = [aws_security_group.vpc_endpoint.id]
+  subnet_ids          = module.idp_vpc.private_subnet_ids
+  tags                = local.common_tags
+}
+
+resource "aws_vpc_endpoint" "gateway" {
+  for_each = local.vpc_endpoints_gateway
+
+  vpc_id            = module.idp_vpc.vpc_id
+  vpc_endpoint_type = "Gateway"
+  service_name      = "com.amazonaws.${var.region}.${each.value}"
+  route_table_ids   = module.idp_vpc.private_route_table_ids
+  tags              = local.common_tags
+}
+
+moved {
+  from = aws_vpc_endpoint.ssm
+  to   = aws_vpc_endpoint.interface["ssm"]
 }
 
 #
@@ -86,6 +101,7 @@ resource "aws_network_acl_rule" "smtp_tls_inbound" {
 # Security groups
 #
 
+# VPC endpoint ================================================================
 resource "aws_security_group" "vpc_endpoint" {
   name        = "vpc_endpoint"
   description = "NSG for VPC endpoints"
@@ -93,7 +109,49 @@ resource "aws_security_group" "vpc_endpoint" {
   tags        = local.common_tags
 }
 
-# ECS IdP
+resource "aws_security_group_rule" "vpc_endpoint_ingress_idp_ecs" {
+  description              = "Ingress from idp ECS task to VPC endpoint"
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.vpc_endpoint.id
+  source_security_group_id = aws_security_group.idp_ecs.id
+}
+
+resource "aws_security_group_rule" "vpc_endpoint_ingress_idp_login_ecs" {
+  description              = "Ingress from idp login ECS task to VPC endpoint"
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.vpc_endpoint.id
+  source_security_group_id = aws_security_group.idp_login_ecs.id
+}
+
+resource "aws_security_group_rule" "vpc_endpoint_ingress_lambda_pr_review" {
+  count = var.env == "staging" ? 1 : 0
+
+  description              = "Ingress from lambda PR review env to VPC endpoint"
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.vpc_endpoint.id
+  source_security_group_id = aws_security_group.lambda_pr_review[0].id
+}
+
+resource "aws_security_group_rule" "vpc_endpoint_ingress_idp_event_exporter" {
+  description              = "Ingress from idp event exporter to VPC endpoint"
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.vpc_endpoint.id
+  source_security_group_id = aws_security_group.idp_event_exporter.id
+}
+
+# ECS IdP =====================================================================
 resource "aws_security_group" "idp_ecs" {
   description = "NSG for idp ECS Tasks"
   name        = "idp_ecs"
@@ -101,6 +159,29 @@ resource "aws_security_group" "idp_ecs" {
   tags        = local.common_tags
 }
 
+resource "aws_security_group_rule" "idp_ecs_egress_endpoint_interface" {
+  description              = "Egress from idp ecs to interface endpoints"
+  type                     = "egress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.idp_ecs.id
+  source_security_group_id = aws_security_group.vpc_endpoint.id
+}
+
+resource "aws_security_group_rule" "idp_ecs_egress_endpoint_gateway" {
+  for_each = local.vpc_endpoints_gateway
+
+  description       = "Egress from idp ecs to ${each.value} gateway endpoint"
+  type              = "egress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  security_group_id = aws_security_group.idp_ecs.id
+  prefix_list_ids   = [aws_vpc_endpoint.gateway[each.value].prefix_list_id]
+}
+
+# TEMP: remove in a future PR once all VPC endpoints are created
 resource "aws_security_group_rule" "idp_ecs_egress_internet" {
   description       = "Egress from idp ECS task to internet (HTTPS)"
   type              = "egress"
@@ -151,17 +232,7 @@ resource "aws_security_group_rule" "idp_ecs_ingress_idp_login_ecs" {
   source_security_group_id = aws_security_group.idp_login_ecs.id
 }
 
-resource "aws_security_group_rule" "vpc_endpoint_ingress_idp_ecs" {
-  description              = "Ingress from idp ECS task to VPC endpoint"
-  type                     = "ingress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.vpc_endpoint.id
-  source_security_group_id = aws_security_group.idp_ecs.id
-}
-
-# ECS IdP Login
+# ECS IdP Login ===============================================================
 resource "aws_security_group" "idp_login_ecs" {
   description = "NSG for idp login ECS Tasks"
   name        = "idp_login_ecs"
@@ -209,17 +280,7 @@ resource "aws_security_group_rule" "idp_login_ecs_egress_idp_ecs" {
   source_security_group_id = aws_security_group.idp_ecs.id
 }
 
-resource "aws_security_group_rule" "vpc_endpoint_ingress_idp_login_ecs" {
-  description              = "Ingress from idp login ECS task to VPC endpoint"
-  type                     = "ingress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.vpc_endpoint.id
-  source_security_group_id = aws_security_group.idp_login_ecs.id
-}
-
-# Load balancer
+# Load balancer ===============================================================
 resource "aws_security_group" "idp_lb" {
   name        = "idp_lb"
   description = "NSG for idp load balancer"
@@ -267,7 +328,7 @@ resource "aws_security_group_rule" "idp_login_lb_egress_ecs" {
   source_security_group_id = aws_security_group.idp_login_ecs.id
 }
 
-# Database
+# Database ====================================================================
 resource "aws_security_group" "idp_db" {
   name        = "idp_db"
   description = "NSG for idp database"
@@ -295,7 +356,7 @@ resource "aws_security_group_rule" "idp_ecs_egress_db" {
   source_security_group_id = aws_security_group.idp_db.id
 }
 
-# EFS
+# EFS =======================================================================
 resource "aws_security_group" "idp_efs" {
   name        = "idp_efs"
   description = "Allow access to EFS from idp ECS tasks"
@@ -323,9 +384,7 @@ resource "aws_security_group_rule" "idp_login_efs_ingress_ecs" {
   source_security_group_id = aws_security_group.idp_login_ecs.id
 }
 
-#
-# PR review environment
-#
+# PR review environment =======================================================
 resource "aws_security_group" "lambda_pr_review" {
   count = var.env == "staging" ? 1 : 0
 
@@ -371,25 +430,7 @@ resource "aws_security_group_rule" "idp_ecs_ingress_lambda_pr_review" {
   source_security_group_id = aws_security_group.lambda_pr_review[0].id
 }
 
-resource "aws_security_group_rule" "vpc_endpoint_ingress_lambda_pr_review" {
-  count = var.env == "staging" ? 1 : 0
-
-  description              = "Ingress from lambda PR review env to VPC endpoint"
-  type                     = "ingress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.vpc_endpoint.id
-  source_security_group_id = aws_security_group.lambda_pr_review[0].id
-}
-
-#
-# IdP event exporter
-#
-data "aws_prefix_list" "s3" {
-  name = "com.amazonaws.${var.region}.s3"
-}
-
+# IdP event exporter ==========================================================
 resource "aws_security_group" "idp_event_exporter" {
   description = "NSG for idp event exporter Lambda function"
   name        = "idp_event_exporter"
@@ -424,7 +465,7 @@ resource "aws_security_group_rule" "idp_event_exporter_egress_s3" {
   to_port           = 443
   protocol          = "tcp"
   security_group_id = aws_security_group.idp_event_exporter.id
-  prefix_list_ids   = [data.aws_prefix_list.s3.id]
+  prefix_list_ids   = [aws_vpc_endpoint.gateway["s3"].prefix_list_id]
 }
 
 resource "aws_security_group_rule" "idp_event_exporter_egress_vpc_endpoint" {
@@ -435,14 +476,4 @@ resource "aws_security_group_rule" "idp_event_exporter_egress_vpc_endpoint" {
   protocol                 = "tcp"
   security_group_id        = aws_security_group.idp_event_exporter.id
   source_security_group_id = aws_security_group.vpc_endpoint.id
-}
-
-resource "aws_security_group_rule" "vpc_endpoint_ingress_idp_event_exporter" {
-  description              = "Ingress from idp event exporter to VPC endpoint"
-  type                     = "ingress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
-  security_group_id        = aws_security_group.vpc_endpoint.id
-  source_security_group_id = aws_security_group.idp_event_exporter.id
 }
