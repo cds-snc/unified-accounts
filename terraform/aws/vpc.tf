@@ -181,17 +181,6 @@ resource "aws_security_group_rule" "idp_ecs_egress_endpoint_gateway" {
   prefix_list_ids   = [aws_vpc_endpoint.gateway[each.value].prefix_list_id]
 }
 
-# TEMP: remove in a future PR once all VPC endpoints are created
-resource "aws_security_group_rule" "idp_ecs_egress_internet" {
-  description       = "Egress from idp ECS task to internet (HTTPS)"
-  type              = "egress"
-  to_port           = 443
-  from_port         = 443
-  protocol          = "tcp"
-  security_group_id = aws_security_group.idp_ecs.id
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
 resource "aws_security_group_rule" "idp_ecs_egress_smtp_tls" {
   description       = "Egress from idp ECS task to SMTP"
   type              = "egress"
