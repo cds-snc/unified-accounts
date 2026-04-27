@@ -159,6 +159,29 @@ resource "aws_security_group" "idp_ecs" {
   tags        = local.common_tags
 }
 
+resource "aws_security_group_rule" "idp_ecs_egress_endpoint_interface" {
+  description              = "Egress from idp ecs to interface endpoints"
+  type                     = "egress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.idp_ecs.id
+  source_security_group_id = aws_security_group.vpc_endpoint.id
+}
+
+resource "aws_security_group_rule" "idp_ecs_egress_endpoint_gateway" {
+  for_each = local.vpc_endpoints_gateway
+
+  description       = "Egress from idp ecs to ${each.value} gateway endpoint"
+  type              = "egress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  security_group_id = aws_security_group.idp_ecs.id
+  prefix_list_ids   = [aws_vpc_endpoint.gateway[each.value].prefix_list_id]
+}
+
+# TEMP: remove in a future PR once all VPC endpoints are created
 resource "aws_security_group_rule" "idp_ecs_egress_internet" {
   description       = "Egress from idp ECS task to internet (HTTPS)"
   type              = "egress"
