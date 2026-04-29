@@ -1,7 +1,7 @@
 locals {
   pr_review_delete_unused = "platform-unified-accounts-user-portal-pr-review-delete-unused"
   pr_review_deploy        = "platform-unified-accounts-user-portal-pr-review-deploy"
-  pr_review_get_vars      = "platform-unified-accounts-user-portal-pr-review-get-vars"
+  pr_review_get_vars      = "platform-unified-accounts-pr-review-get-vars"
 }
 
 #
@@ -26,7 +26,7 @@ module "github_workflow_roles" {
     },
     {
       name      = local.pr_review_get_vars
-      repo_name = "platform-unified-accounts-user-portal"
+      repo_name = "platform-unified-accounts"
       claim     = "ref:refs/heads/main"
     }
   ]
