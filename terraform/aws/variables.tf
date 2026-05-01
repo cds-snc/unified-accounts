@@ -113,6 +113,34 @@ variable "idp_event_exporter_bearer_token" {
   sensitive   = true
 }
 
+variable "idp_load_test_client_id" {
+  description = "The Zitadel client ID for the IdP load test."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "idp_load_test_password" {
+  description = "The password for the IdP load test user."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "idp_load_test_totp_secret" {
+  description = "The TOTP secret for the IdP load test user."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "idp_load_test_username" {
+  description = "The username for the IdP load test user."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "idp_loginclient_machine_username" {
   description = "The machine username for the IdP login client."
   type        = string
