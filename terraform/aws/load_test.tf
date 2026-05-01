@@ -15,13 +15,3 @@ module "load_test" {
   ecr_policy  = file("${path.module}/ecr-lifecycle.json")
   common_tags = local.common_tags
 }
-
-moved {
-  from = aws_ecr_repository.idp_load_test
-  to   = module.load_test.aws_ecr_repository.idp_load_test
-}
-
-moved {
-  from = aws_ecr_lifecycle_policy.idp_load_test
-  to   = module.load_test.aws_ecr_lifecycle_policy.idp_load_test
-}
