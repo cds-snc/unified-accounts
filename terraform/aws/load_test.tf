@@ -3,7 +3,7 @@
 #
 module "load_test" {
   count  = var.env == "staging" ? 1 : 0
-  source = "${path.module}/load_test"
+  source = "./load_test"
   region = var.region
 
   idp_domain                = var.domain
