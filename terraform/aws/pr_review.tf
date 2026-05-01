@@ -1,57 +1,104 @@
-resource "aws_iam_role" "idp_login_pr" {
-  count = var.env == "staging" ? 1 : 0
+module "pr_review" {
+  count  = var.env == "staging" ? 1 : 0
+  source = "./pr_review"
 
-  name               = "idp-login-pr"
-  assume_role_policy = data.aws_iam_policy_document.idp_login_pr[0].json
+  region     = var.region
+  account_id = var.account_id
+
+  pr_review_env_ssm_params_get = [
+    aws_ssm_parameter.idp_loginclient_machine_username.arn,
+    aws_ssm_parameter.idp_loginclient_pat.arn,
+    aws_ssm_parameter.idp_zitadel_org.arn,
+    aws_ssm_parameter.idp_notify_api_key.arn,
+    aws_ssm_parameter.idp_notify_template_id.arn,
+  ]
+
+  ecr_policy        = file("${path.module}/ecr-lifecycle.json")
+  billing_tag_value = var.billing_tag_value
+  common_tags       = local.common_tags
 }
 
-data "aws_iam_policy_document" "idp_login_pr" {
-  count = var.env == "staging" ? 1 : 0
-
-  statement {
-    actions = ["sts:AssumeRole"]
-    effect  = "Allow"
-
-    principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
-    }
-  }
+moved {
+  from = aws_iam_role.idp_login_pr[0]
+  to   = module.pr_review[0].aws_iam_role.idp_login_pr
 }
 
-resource "aws_iam_role_policy_attachment" "idp_login_pr_vpc_access" {
-  count = var.env == "staging" ? 1 : 0
-
-  role       = aws_iam_role.idp_login_pr[0].name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+moved {
+  from = aws_iam_policy.idp_login_pr_ssm_params[0]
+  to   = module.pr_review[0].aws_iam_policy.idp_login_pr_ssm_params
 }
 
-resource "aws_iam_role_policy_attachment" "idp_login_pr_ssm_params" {
-  count = var.env == "staging" ? 1 : 0
-
-  role       = aws_iam_role.idp_login_pr[0].name
-  policy_arn = aws_iam_policy.idp_login_pr_ssm_params[0].arn
+moved {
+  from = module.github_workflow_roles[0].aws_iam_role.this["platform-unified-accounts-user-portal-pr-review-deploy"]
+  to   = module.pr_review[0].module.github_workflow_roles.aws_iam_role.this["platform-unified-accounts-user-portal-pr-review-deploy"]
 }
 
-resource "aws_iam_policy" "idp_login_pr_ssm_params" {
-  count = var.env == "staging" ? 1 : 0
-
-  name   = "idp-login-pr-ssm-params"
-  path   = "/"
-  policy = data.aws_iam_policy_document.idp_login_pr_ssm_params[0].json
+moved {
+  from = module.github_workflow_roles[0].aws_iam_role.this["platform-unified-accounts-user-portal-pr-review-delete-unused"]
+  to   = module.pr_review[0].module.github_workflow_roles.aws_iam_role.this["platform-unified-accounts-user-portal-pr-review-delete-unused"]
 }
 
-data "aws_iam_policy_document" "idp_login_pr_ssm_params" {
-  count = var.env == "staging" ? 1 : 0
+moved {
+  from = module.github_workflow_roles[0].aws_iam_role.this["platform-unified-accounts-pr-review-get-vars"]
+  to   = module.pr_review[0].module.github_workflow_roles.aws_iam_role.this["platform-unified-accounts-pr-review-get-vars"]
+}
 
-  statement {
-    effect = "Allow"
-    actions = [
-      "ssm:GetParameter",
-      "ssm:GetParameters",
-    ]
-    resources = [
-      local.pr_review_env_ssm_param_arn
-    ]
-  }
+moved {
+  from = aws_iam_role_policy_attachment.pr_review_get_vars[0]
+  to   = module.pr_review[0].aws_iam_role_policy_attachment.pr_review_get_vars
+}
+
+moved {
+  from = aws_iam_role_policy_attachment.pr_review_deploy[0]
+  to   = module.pr_review[0].aws_iam_role_policy_attachment.pr_review_deploy
+}
+
+moved {
+  from = aws_iam_role_policy_attachment.pr_review_delete_unused[0]
+  to   = module.pr_review[0].aws_iam_role_policy_attachment.pr_review_delete_unused
+}
+
+moved {
+  from = aws_iam_role_policy_attachment.idp_login_pr_vpc_access[0]
+  to   = module.pr_review[0].aws_iam_role_policy_attachment.idp_login_pr_vpc_access
+}
+
+moved {
+  from = aws_iam_role_policy_attachment.idp_login_pr_ssm_params[0]
+  to   = module.pr_review[0].aws_iam_role_policy_attachment.idp_login_pr_ssm_params
+}
+
+moved {
+  from = aws_iam_role.idp_login_pr[0]
+  to   = module.pr_review[0].aws_iam_role.idp_login_pr
+}
+
+moved {
+  from = aws_iam_policy.pr_review_get_vars[0]
+  to   = module.pr_review[0].aws_iam_policy.pr_review_get_vars
+}
+
+moved {
+  from = aws_iam_policy.pr_review_deploy[0]
+  to   = module.pr_review[0].aws_iam_policy.pr_review_deploy
+}
+
+moved {
+  from = aws_iam_policy.pr_review_delete_unused[0]
+  to   = module.pr_review[0].aws_iam_policy.pr_review_delete_unused
+}
+
+moved {
+  from = aws_iam_policy.idp_login_pr_ssm_params[0]
+  to   = module.pr_review[0].aws_iam_policy.idp_login_pr_ssm_params
+}
+
+moved {
+  from = aws_ecr_repository.idp_login_pr[0]
+  to   = module.pr_review[0].aws_ecr_repository.idp_login_pr
+}
+
+moved {
+  from = aws_ecr_lifecycle_policy.idp_login_pr[0]
+  to   = module.pr_review[0].aws_ecr_lifecycle_policy.idp_login_pr
 }

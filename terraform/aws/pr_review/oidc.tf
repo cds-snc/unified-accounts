@@ -1,7 +1,8 @@
 locals {
-  pr_review_delete_unused = "platform-unified-accounts-user-portal-pr-review-delete-unused"
-  pr_review_deploy        = "platform-unified-accounts-user-portal-pr-review-deploy"
-  pr_review_get_vars      = "platform-unified-accounts-pr-review-get-vars"
+  pr_review_delete_unused     = "platform-unified-accounts-user-portal-pr-review-delete-unused"
+  pr_review_deploy            = "platform-unified-accounts-user-portal-pr-review-deploy"
+  pr_review_get_vars          = "platform-unified-accounts-pr-review-get-vars"
+  pr_review_env_ssm_param_arn = "arn:aws:ssm:${var.region}:${var.account_id}:parameter/idp-login-pr/env"
 }
 
 #
@@ -10,7 +11,6 @@ locals {
 # attribute of each role.
 # 
 module "github_workflow_roles" {
-  count  = var.env == "staging" ? 1 : 0
   source = "github.com/cds-snc/terraform-modules//gh_oidc_role?ref=v10.11.4"
 
   roles = [
@@ -38,24 +38,20 @@ module "github_workflow_roles" {
 # Create and Manage PR review environment resources
 #
 resource "aws_iam_role_policy_attachment" "pr_review_deploy" {
-  count      = var.env == "staging" ? 1 : 0
   role       = local.pr_review_deploy
-  policy_arn = aws_iam_policy.pr_review_deploy[0].arn
+  policy_arn = aws_iam_policy.pr_review_deploy.arn
 
-  depends_on = [module.github_workflow_roles[0]]
+  depends_on = [module.github_workflow_roles]
 }
 
 resource "aws_iam_policy" "pr_review_deploy" {
-  count  = var.env == "staging" ? 1 : 0
   name   = local.pr_review_deploy
   path   = "/"
-  policy = data.aws_iam_policy_document.pr_review_deploy[0].json
+  policy = data.aws_iam_policy_document.pr_review_deploy.json
 }
 
 #trivy:ignore:AWS-0342
 data "aws_iam_policy_document" "pr_review_deploy" {
-  count = var.env == "staging" ? 1 : 0
-
   statement {
     effect = "Allow"
     actions = [
@@ -85,7 +81,7 @@ data "aws_iam_policy_document" "pr_review_deploy" {
       "iam:PassRole"
     ]
     resources = [
-      aws_iam_role.idp_login_pr[0].arn
+      aws_iam_role.idp_login_pr.arn
     ]
   }
 
@@ -132,7 +128,7 @@ data "aws_iam_policy_document" "pr_review_deploy" {
       "ecr:UploadLayerPart"
     ]
     resources = [
-      aws_ecr_repository.idp_login_pr[0].arn
+      aws_ecr_repository.idp_login_pr.arn
     ]
   }
 
@@ -159,26 +155,20 @@ data "aws_iam_policy_document" "pr_review_deploy" {
 # Delete unused PR review environment resources
 #
 resource "aws_iam_role_policy_attachment" "pr_review_delete_unused" {
-  count = var.env == "staging" ? 1 : 0
-
   role       = local.pr_review_delete_unused
-  policy_arn = aws_iam_policy.pr_review_delete_unused[0].arn
+  policy_arn = aws_iam_policy.pr_review_delete_unused.arn
 
-  depends_on = [module.github_workflow_roles[0]]
+  depends_on = [module.github_workflow_roles]
 }
 
 resource "aws_iam_policy" "pr_review_delete_unused" {
-  count = var.env == "staging" ? 1 : 0
-
   name   = local.pr_review_delete_unused
   path   = "/"
-  policy = data.aws_iam_policy_document.pr_review_delete_unused[0].json
+  policy = data.aws_iam_policy_document.pr_review_delete_unused.json
 }
 
 #trivy:ignore:AWS-0342
 data "aws_iam_policy_document" "pr_review_delete_unused" {
-  count = var.env == "staging" ? 1 : 0
-
   statement {
     effect = "Allow"
     actions = [
@@ -227,25 +217,19 @@ data "aws_iam_policy_document" "pr_review_delete_unused" {
 # Get env vars from IdP login task definition for PR review environments
 #
 resource "aws_iam_role_policy_attachment" "pr_review_get_vars" {
-  count = var.env == "staging" ? 1 : 0
-
   role       = local.pr_review_get_vars
-  policy_arn = aws_iam_policy.pr_review_get_vars[0].arn
+  policy_arn = aws_iam_policy.pr_review_get_vars.arn
 
-  depends_on = [module.github_workflow_roles[0]]
+  depends_on = [module.github_workflow_roles]
 }
 
 resource "aws_iam_policy" "pr_review_get_vars" {
-  count = var.env == "staging" ? 1 : 0
-
   name   = local.pr_review_get_vars
   path   = "/"
-  policy = data.aws_iam_policy_document.pr_review_get_vars[0].json
+  policy = data.aws_iam_policy_document.pr_review_get_vars.json
 }
 
 data "aws_iam_policy_document" "pr_review_get_vars" {
-  count = var.env == "staging" ? 1 : 0
-
   statement {
     effect = "Allow"
     actions = [
@@ -283,14 +267,10 @@ data "aws_iam_policy_document" "pr_review_get_vars" {
       "ssm:GetParameter",
       "ssm:GetParameters",
     ]
-    resources = [
-      aws_ssm_parameter.idp_loginclient_machine_username.arn,
-      aws_ssm_parameter.idp_loginclient_pat.arn,
-      aws_ssm_parameter.idp_zitadel_org.arn,
-      aws_ssm_parameter.idp_notify_api_key.arn,
-      aws_ssm_parameter.idp_notify_template_id.arn,
-      local.pr_review_env_ssm_param_arn
-    ]
+    resources = concat(
+      var.pr_review_env_ssm_params_get, 
+      [local.pr_review_env_ssm_param_arn]
+    )
   }
 
   statement {
