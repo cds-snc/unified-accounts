@@ -268,7 +268,7 @@ data "aws_iam_policy_document" "pr_review_get_vars" {
       "ssm:GetParameters",
     ]
     resources = concat(
-      var.pr_review_env_ssm_params_get, 
+      var.pr_review_env_ssm_params_get,
       [local.pr_review_env_ssm_param_arn]
     )
   }

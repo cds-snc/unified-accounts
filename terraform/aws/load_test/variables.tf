@@ -9,11 +9,6 @@ variable "ecr_policy" {
   type        = string
 }
 
-variable "idp_domain" {
-  description = "The IdP domain to use for the load test"
-  type        = string
-}
-
 variable "idp_load_test_client_id" {
   description = "The Zitadel client ID for the IdP load test."
   type        = string
@@ -36,6 +31,11 @@ variable "idp_load_test_username" {
   description = "The username for the IdP load test user."
   type        = string
   sensitive   = true
+}
+
+variable "idp_url" {
+  description = "The IdP URL to use for the load test"
+  type        = string
 }
 
 variable "region" {
