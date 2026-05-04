@@ -2,7 +2,7 @@
  * S3 bucket to store exported events
  */
 module "event_exporter_s3" {
-  source            = "github.com/cds-snc/terraform-modules//S3?ref=v11.0.0"
+  source            = "github.com/cds-snc/terraform-modules//S3?ref=v11.0.1"
   bucket_name       = "idp-event-exporter-${var.env}"
   billing_tag_value = var.billing_tag_value
 
