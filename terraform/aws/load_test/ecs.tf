@@ -2,7 +2,7 @@ locals {
   idp_load_test_container_env = [
     {
       "name"  = "ZITADEL_URL",
-      "value" = "https://${var.idp_domain}"
+      "value" = var.idp_url
     },
     {
       "name"  = "REDIRECT_URI",
@@ -40,16 +40,16 @@ data "aws_ecr_image" "idp_load_test_latest" {
 
 resource "aws_ecs_task_definition" "idp_load_test" {
   family             = "idp-load-test"
-  cpu                = 2048
-  memory             = 4096
+  cpu                = 4096
+  memory             = 8192
   execution_role_arn = aws_iam_role.idp_load_test_task.arn
   task_role_arn      = aws_iam_role.idp_load_test_task.arn
   container_definitions = jsonencode([{
     name      = "idp-load-test"
-    cpu       = 2048
-    memory    = 4096
+    cpu       = 4096
+    memory    = 8192
     essential = true
-    command   = ["run", "/test/login.js"]
+    command   = ["run", "--quiet", "/test/login.js"]
     image     = data.aws_ecr_image.idp_load_test_latest.image_uri
     linuxParameters = {
       capabilities : {
@@ -65,8 +65,8 @@ resource "aws_ecs_task_definition" "idp_load_test" {
         awslogs-stream-prefix = "task"
       }
     }
-    environment    = local.idp_load_test_container_env
-    secrets        = local.idp_load_test_container_secrets
+    environment = local.idp_load_test_container_env
+    secrets     = local.idp_load_test_container_secrets
   }])
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
@@ -74,7 +74,6 @@ resource "aws_ecs_task_definition" "idp_load_test" {
     operating_system_family = "LINUX"
     cpu_architecture        = "ARM64"
   }
-
   tags = var.common_tags
 }
 
@@ -162,7 +161,7 @@ data "aws_iam_policy_document" "idp_load_test_ssm_parameters" {
       aws_ssm_parameter.idp_load_test_totp_secret.arn,
     ]
   }
-} 
+}
 
 resource "aws_iam_role_policy_attachment" "idp_load_test_task" {
   role       = aws_iam_role.idp_load_test_task.name

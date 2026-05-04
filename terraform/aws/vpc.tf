@@ -141,6 +141,18 @@ resource "aws_security_group_rule" "vpc_endpoint_ingress_lambda_pr_review" {
   source_security_group_id = aws_security_group.lambda_pr_review[0].id
 }
 
+resource "aws_security_group_rule" "vpc_endpoint_ingress_idp_load_test_ecs" {
+  count = var.env == "staging" ? 1 : 0
+
+  description              = "Ingress from idp load test ECS task to VPC endpoint"
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.vpc_endpoint.id
+  source_security_group_id = aws_security_group.idp_load_test_ecs[0].id
+}
+
 resource "aws_security_group_rule" "vpc_endpoint_ingress_idp_event_exporter" {
   description              = "Ingress from idp event exporter to VPC endpoint"
   type                     = "ingress"
@@ -417,6 +429,64 @@ resource "aws_security_group_rule" "idp_ecs_ingress_lambda_pr_review" {
   protocol                 = "tcp"
   security_group_id        = aws_security_group.idp_ecs.id
   source_security_group_id = aws_security_group.lambda_pr_review[0].id
+}
+
+# IdP load test =======================================================
+resource "aws_security_group" "idp_load_test_ecs" {
+  count = var.env == "staging" ? 1 : 0
+
+  name        = "idp-load-test-ecs"
+  description = "IdP load test ECS task"
+  vpc_id      = module.idp_vpc.vpc_id
+  tags        = local.common_tags
+}
+
+resource "aws_security_group_rule" "idp_load_test_ecs_egress_idp_ecs" {
+  count = var.env == "staging" ? 1 : 0
+
+  description              = "Egress from idp load test ECS task to idp ECS task"
+  type                     = "egress"
+  to_port                  = 8080
+  from_port                = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.idp_load_test_ecs[0].id
+  source_security_group_id = aws_security_group.idp_ecs.id
+}
+
+resource "aws_security_group_rule" "idp_ecs_ingress_idp_load_test_ecs" {
+  count = var.env == "staging" ? 1 : 0
+
+  description              = "Ingress to idp ECS task from idp load test ECS task"
+  type                     = "ingress"
+  to_port                  = 8080
+  from_port                = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.idp_ecs.id
+  source_security_group_id = aws_security_group.idp_load_test_ecs[0].id
+}
+
+resource "aws_security_group_rule" "idp_load_test_ecs_egress_s3" {
+  count = var.env == "staging" ? 1 : 0
+
+  description       = "Egress from idp load test ECS task to S3"
+  type              = "egress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  security_group_id = aws_security_group.idp_load_test_ecs[0].id
+  prefix_list_ids   = [aws_vpc_endpoint.gateway["s3"].prefix_list_id]
+}
+
+resource "aws_security_group_rule" "idp_load_test_ecs_egress_vpc_endpoint" {
+  count = var.env == "staging" ? 1 : 0
+
+  description              = "Egress from idp load test ECS task to VPC endpoint"
+  type                     = "egress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.idp_load_test_ecs[0].id
+  source_security_group_id = aws_security_group.vpc_endpoint.id
 }
 
 # IdP event exporter ==========================================================

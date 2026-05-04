@@ -6,7 +6,7 @@ module "load_test" {
   source = "./load_test"
   region = var.region
 
-  idp_domain                = var.domain
+  idp_url                   = "http://idp.${aws_service_discovery_private_dns_namespace.idp_ecs.name}:8080"
   idp_load_test_client_id   = var.idp_load_test_client_id
   idp_load_test_username    = var.idp_load_test_username
   idp_load_test_password    = var.idp_load_test_password
