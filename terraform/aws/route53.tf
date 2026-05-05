@@ -62,6 +62,7 @@ module "resolver_dns" {
   firewall_enabled = true
 
   allowed_domains = [
+    var.domain,
     "*.amazonaws.com.",
     "api.notification.canada.ca.",
     "idp.ecs.local."
