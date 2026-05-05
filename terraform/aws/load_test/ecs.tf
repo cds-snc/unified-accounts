@@ -40,14 +40,14 @@ data "aws_ecr_image" "idp_load_test_latest" {
 
 resource "aws_ecs_task_definition" "idp_load_test" {
   family             = "idp-load-test"
-  cpu                = 4096
-  memory             = 8192
+  cpu                = 8192
+  memory             = 16384
   execution_role_arn = aws_iam_role.idp_load_test_task.arn
   task_role_arn      = aws_iam_role.idp_load_test_task.arn
   container_definitions = jsonencode([{
     name      = "idp-load-test"
-    cpu       = 4096
-    memory    = 8192
+    cpu       = 8192
+    memory    = 16384
     essential = true
     command   = ["run", "--quiet", "/test/login.js"]
     image     = data.aws_ecr_image.idp_load_test_latest.image_uri
@@ -56,7 +56,20 @@ resource "aws_ecs_task_definition" "idp_load_test" {
         add : [],
         drop : ["ALL"]
       }
+      initProcessEnabled = true
     }
+    ulimits : [
+      {
+        name : "nofile",
+        softLimit : 65536,
+        hardLimit : 65536
+      },
+      {
+        name : "nproc",
+        softLimit : 65536,
+        hardLimit : 65536
+      }
+    ],
     logConfiguration = {
       logDriver = "awslogs",
       options = {
