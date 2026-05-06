@@ -36,6 +36,7 @@ resource "aws_wafv2_web_acl_rule" "block_large_requests" {
   name        = "BlockLargeRequests"
   priority    = 10
   web_acl_arn = aws_wafv2_web_acl.idp.arn
+  depends_on  = [aws_wafv2_web_acl_rule.invalid_host]
 
   action {
     block {}
@@ -110,6 +111,7 @@ resource "aws_wafv2_web_acl_rule" "invalid_host" {
   name        = "InvalidHost"
   priority    = 20
   web_acl_arn = aws_wafv2_web_acl.idp.arn
+  depends_on  = [aws_wafv2_web_acl_rule.canada_only_geo_restriction]
 
   action {
     block {}
@@ -152,6 +154,7 @@ resource "aws_wafv2_web_acl_rule" "canada_only_geo_restriction" {
   name        = "CanadaOnlyGeoRestriction"
   priority    = 30
   web_acl_arn = aws_wafv2_web_acl.idp.arn
+  depends_on  = [aws_wafv2_web_acl_rule.aws_managed_rules_amazon_ip_reputation_list]
 
   action {
     block {
@@ -186,6 +189,7 @@ resource "aws_wafv2_web_acl_rule" "aws_managed_rules_amazon_ip_reputation_list" 
   name        = "AWSManagedRulesAmazonIpReputationList"
   priority    = 40
   web_acl_arn = aws_wafv2_web_acl.idp.arn
+  depends_on  = [aws_wafv2_web_acl_rule.all_request_limit_ip]
 
   override_action {
     none {}
@@ -209,6 +213,7 @@ resource "aws_wafv2_web_acl_rule" "all_request_limit_ip" {
   name        = "AllRequestLimitIP"
   priority    = 50
   web_acl_arn = aws_wafv2_web_acl.idp.arn
+  depends_on  = [aws_wafv2_web_acl_rule.all_request_limit_ja4]
 
   action {
     block {}
@@ -233,6 +238,7 @@ resource "aws_wafv2_web_acl_rule" "all_request_limit_ja4" {
   name        = "AllRequestLimitJA4"
   priority    = 60
   web_acl_arn = aws_wafv2_web_acl.idp.arn
+  depends_on  = [aws_wafv2_web_acl_rule.mutating_request_limit_ip]
 
   action {
     block {}
@@ -262,6 +268,7 @@ resource "aws_wafv2_web_acl_rule" "mutating_request_limit_ip" {
   name        = "MutatingRequestLimitIP"
   priority    = 70
   web_acl_arn = aws_wafv2_web_acl.idp.arn
+  depends_on  = [aws_wafv2_web_acl_rule.mutating_request_limit_ja4]
 
   action {
     block {}
@@ -297,6 +304,7 @@ resource "aws_wafv2_web_acl_rule" "mutating_request_limit_ja4" {
   name        = "MutatingRequestLimitJA4"
   priority    = 80
   web_acl_arn = aws_wafv2_web_acl.idp.arn
+  depends_on  = [aws_wafv2_web_acl_rule.aws_managed_rules_known_bad_inputs_rule_set]
 
   action {
     block {}
@@ -339,6 +347,7 @@ resource "aws_wafv2_web_acl_rule" "aws_managed_rules_known_bad_inputs_rule_set" 
   name        = "AWSManagedRulesKnownBadInputsRuleSet"
   priority    = 100
   web_acl_arn = aws_wafv2_web_acl.idp.arn
+  depends_on  = [aws_wafv2_web_acl_rule.aws_managed_rules_linux_rule_set]
 
   override_action {
     none {}
@@ -362,6 +371,7 @@ resource "aws_wafv2_web_acl_rule" "aws_managed_rules_linux_rule_set" {
   name        = "AWSManagedRulesLinuxRuleSet"
   priority    = 110
   web_acl_arn = aws_wafv2_web_acl.idp.arn
+  depends_on  = [aws_wafv2_web_acl_rule.aws_managed_rules_anti_ddos_rule_set]
 
   override_action {
     none {}
@@ -384,6 +394,7 @@ resource "aws_wafv2_web_acl_rule" "aws_managed_rules_common_rule_set" {
   name        = "AWSManagedRulesCommonRuleSet"
   priority    = 120
   web_acl_arn = aws_wafv2_web_acl.idp.arn
+  depends_on  = [aws_wafv2_web_acl_rule.aws_managed_rules_bot_control_rule_set]
 
   override_action {
     none {}
@@ -417,6 +428,7 @@ resource "aws_wafv2_web_acl_rule" "aws_managed_rules_anti_ddos_rule_set" {
   name        = "AWSManagedRulesAntiDDoSRuleSet"
   priority    = 90
   web_acl_arn = aws_wafv2_web_acl.idp.arn
+  depends_on  = [aws_wafv2_web_acl_rule.aws_managed_rules_common_rule_set]
 
   override_action {
     none {}
