@@ -6,7 +6,6 @@ locals {
   idp_error_skip_filters = [
     "already been committed",
     "AuthRequest.NotExisting",
-    "Instance.NotFound",
   ]
   idp_error_metric_pattern = "[(w=\"*${join("*\" || w=\"*", local.idp_error_filters)}*\") && w!=\"*${join("*\" && w!=\"*", local.idp_error_skip_filters)}*\"]"
 
