@@ -119,10 +119,12 @@ module "idp_ecs" {
   container_image_track_deployed = true
 
   # Scaling
-  enable_autoscaling       = true
-  desired_count            = var.idp_task_desired_count
-  autoscaling_min_capacity = var.idp_task_min_capacity
-  autoscaling_max_capacity = var.idp_task_max_capacity
+  enable_autoscaling         = true
+  desired_count              = var.idp_task_desired_count
+  autoscaling_min_capacity   = var.idp_task_min_capacity
+  autoscaling_max_capacity   = var.idp_task_max_capacity
+  ecs_scale_cpu_threshold    = 40
+  ecs_scale_memory_threshold = 40
 
   # Task definition
   container_image                     = "${aws_ecr_repository.idp.repository_url}:latest"
@@ -203,10 +205,12 @@ module "login_ecs" {
   container_image_track_deployed = true
 
   # Scaling
-  enable_autoscaling       = true
-  desired_count            = var.idp_login_task_desired_count
-  autoscaling_min_capacity = var.idp_login_task_min_capacity
-  autoscaling_max_capacity = var.idp_login_task_max_capacity
+  enable_autoscaling         = true
+  desired_count              = var.idp_login_task_desired_count
+  autoscaling_min_capacity   = var.idp_login_task_min_capacity
+  autoscaling_max_capacity   = var.idp_login_task_max_capacity
+  ecs_scale_cpu_threshold    = 40
+  ecs_scale_memory_threshold = 40
 
   # Task definition
   container_image                     = "${aws_ecr_repository.idp_login.repository_url}:latest"
