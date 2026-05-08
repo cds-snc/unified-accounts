@@ -218,7 +218,7 @@ module "login_ecs" {
   container_port                      = 3000
   container_environment               = local.login_container_env
   container_secrets                   = local.login_container_secrets
-  container_read_only_root_filesystem = true
+  container_read_only_root_filesystem = false
 
   container_linux_parameters = {
     capabilities = {
