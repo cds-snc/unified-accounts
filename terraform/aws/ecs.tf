@@ -225,12 +225,6 @@ module "login_ecs" {
       add  = []
       drop = ["ALL"]
     }
-    tmpfs = [
-      {
-        containerPath = "/app/.next/cache"
-        size          = 128
-      }
-    ]
   }
 
   task_exec_role_policy_documents = [
