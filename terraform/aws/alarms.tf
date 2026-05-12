@@ -340,7 +340,7 @@ module "alarms_slack" {
     SLACK_WEBHOOK_SSM_PARAMETER_NAME = aws_ssm_parameter.cloudwatch_slack_webhook_url.name
   }
 
-  billing_tag_value = var.billing_code
+  billing_tag_value = var.billing_tag_value
 }
 
 data "aws_iam_policy_document" "alarms_slack" {
