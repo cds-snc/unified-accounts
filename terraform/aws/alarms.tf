@@ -225,41 +225,6 @@ resource "aws_cloudwatch_log_subscription_filter" "error_logged" {
   destination_arn = module.alarms_slack.function_arn
 }
 
-resource "aws_cloudwatch_log_metric_filter" "error_logged" {
-  for_each = local.error_logged_metric_patterns
-
-  name           = "${each.key}-error-logged"
-  pattern        = each.value.pattern
-  log_group_name = each.value.log_group_name
-
-  metric_transformation {
-    name          = "${each.key}-error-logged"
-    namespace     = "idp"
-    value         = "1"
-    default_value = "0"
-  }
-}
-
-resource "aws_cloudwatch_metric_alarm" "error_logged" {
-  for_each = local.error_logged_metric_patterns
-
-  alarm_name          = "${each.key}-error-logged"
-  alarm_description   = "`${each.key}` errors logged over 1 minute."
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = "1"
-  metric_name         = aws_cloudwatch_log_metric_filter.error_logged[each.key].metric_transformation[0].name
-  namespace           = aws_cloudwatch_log_metric_filter.error_logged[each.key].metric_transformation[0].namespace
-  period              = "60"
-  statistic           = "Sum"
-  threshold           = "0"
-  treat_missing_data  = "notBreaching"
-
-  alarm_actions = [aws_sns_topic.cloudwatch_alert_warning.arn]
-  ok_actions    = [aws_sns_topic.cloudwatch_alert_ok.arn]
-
-  tags = local.common_tags
-}
-
 resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
   for_each = local.lambda_functions
 
