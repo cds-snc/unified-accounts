@@ -64,6 +64,15 @@ locals {
       log_group_name = module.event_exporter_lambda.lambda_function_cloudwatch_log_group_name
     }
   }
+
+  lambda_functions = {
+    alarms_slack = {
+      name = module.alarms_slack.function_name
+    }
+    idp_event_exporter = {
+      name = module.event_exporter_lambda.lambda_function_name
+    }
+  }
 }
 
 #
@@ -251,9 +260,11 @@ resource "aws_cloudwatch_metric_alarm" "error_logged" {
   tags = local.common_tags
 }
 
-resource "aws_cloudwatch_metric_alarm" "idp_event_exporter_lambda_errors" {
-  alarm_name          = "${module.event_exporter_lambda.lambda_function_name}-lambda-errors"
-  alarm_description   = "`${module.event_exporter_lambda.lambda_function_name}` Lambda failed invocation over 15 minutes"
+resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
+  for_each = local.lambda_functions
+
+  alarm_name          = "${each.key}-lambda-errors"
+  alarm_description   = "`${each.value.name}` Lambda failed invocation over 15 minutes"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = "1"
   metric_name         = "Errors"
@@ -264,7 +275,7 @@ resource "aws_cloudwatch_metric_alarm" "idp_event_exporter_lambda_errors" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    FunctionName = module.event_exporter_lambda.lambda_function_name
+    FunctionName = each.value.name
   }
 
   alarm_actions = [aws_sns_topic.cloudwatch_alert_warning.arn]
