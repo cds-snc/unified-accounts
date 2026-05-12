@@ -363,7 +363,7 @@ resource "aws_lambda_permission" "alarms_slack" {
   action        = "lambda:InvokeFunction"
   function_name = module.alarms_slack.function_name
   principal     = "logs.amazonaws.com"
-  source_arn    = "${each.value.log_group_name}:*"
+  source_arn    = "arn:aws:logs:${var.region}:${var.account_id}:log-group:${each.value.log_group_name}:*"
 }
 
 resource "aws_ssm_parameter" "cloudwatch_slack_webhook_url" {
