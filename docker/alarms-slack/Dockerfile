@@ -4,10 +4,9 @@ WORKDIR /build
 COPY go.mod go.sum ./
 RUN go mod download
 COPY ./ ./
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o alarms .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o alarms-slack .
 
-FROM public.ecr.aws/lambda/provided:al2023
-
-COPY --from=build /build/alarms ${LAMBDA_TASK_ROOT}/alarms
-
-CMD ["alarms"]
+FROM scratch
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=build /build/alarms-slack /alarms-slack
+CMD ["/alarms-slack"]

@@ -174,14 +174,27 @@ func TestHandler_PostsSingleSlackMessageForAllLogEvents(t *testing.T) {
 	if len(requests) != 1 {
 		t.Fatalf("got %d Slack requests, want 1", len(requests))
 	}
-	if !strings.Contains(requests[0].Text, "CloudWatch error logs received (2)") {
-		t.Fatalf("unexpected Slack message header: %q", requests[0].Text)
+
+	attachment := requests[0].Attachments[0]
+	if attachment.Color != "#eb1607" {
+		t.Fatalf("unexpected attachment color: %q", attachment.Color)
 	}
-	if !strings.Contains(requests[0].Text, "1. first failure") {
-		t.Fatalf("unexpected Slack message body: %q", requests[0].Text)
+
+	headerText := attachment.Blocks[0].Text.Text
+	if !strings.Contains(headerText, "/aws/lambda/example") {
+		t.Fatalf("unexpected Slack message header: %q", headerText)
 	}
-	if !strings.Contains(requests[0].Text, "2. second failure") {
-		t.Fatalf("unexpected Slack message body: %q", requests[0].Text)
+
+	if attachment.Blocks[1].Type != "divider" {
+		t.Fatalf("expected divider block, got %q", attachment.Blocks[1].Type)
+	}
+
+	bodyText := attachment.Blocks[2].Text.Text
+	if !strings.Contains(bodyText, "first failure") {
+		t.Fatalf("unexpected Slack message body: %q", bodyText)
+	}
+	if !strings.Contains(bodyText, "second failure") {
+		t.Fatalf("unexpected Slack message body: %q", bodyText)
 	}
 }
 
@@ -219,9 +232,10 @@ func TestHandler_RequiresAWSLogsData(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestFormatSlackMessageHandlesEmptyMessage(t *testing.T) {
-	message := formatSlackMessage("/aws/lambda/example", "stream-1", []cloudWatchLogRecord{{Message: "   "}})
-	if !strings.Contains(message, "<empty log message>") {
-		t.Fatalf("unexpected message: %q", message)
+	msg := formatSlackMessage("/aws/lambda/example", "stream-1", []cloudWatchLogRecord{{Message: "   "}})
+	bodyText := msg.Attachments[0].Blocks[2].Text.Text
+	if !strings.Contains(bodyText, "<empty log message>") {
+		t.Fatalf("unexpected message: %q", bodyText)
 	}
 }
 

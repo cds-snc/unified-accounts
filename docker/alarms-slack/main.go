@@ -95,8 +95,23 @@ type cloudWatchLogRecord struct {
 	Message   string `json:"message"`
 }
 
-type slackMessage struct {
+type slackBlockText struct {
+	Type string `json:"type"`
 	Text string `json:"text"`
+}
+
+type slackBlock struct {
+	Type string          `json:"type"`
+	Text *slackBlockText `json:"text,omitempty"`
+}
+
+type slackAttachment struct {
+	Color  string       `json:"color"`
+	Blocks []slackBlock `json:"blocks"`
+}
+
+type slackMessage struct {
+	Attachments []slackAttachment `json:"attachments"`
 }
 
 // loadSlackWebhookURL reads the Slack webhook URL from SSM Parameter Store,
@@ -154,7 +169,7 @@ func decodeCloudWatchLogsData(encodedData string) (*cloudWatchLogsPayload, error
 }
 
 func postToSlack(ctx context.Context, webhookURL string, payload cloudWatchLogsPayload) error {
-	messageBody, err := json.Marshal(slackMessage{Text: formatSlackMessage(payload.LogGroup, payload.LogStream, payload.LogEvents)})
+	messageBody, err := json.Marshal(formatSlackMessage(payload.LogGroup, payload.LogStream, payload.LogEvents))
 	if err != nil {
 		return fmt.Errorf("marshal Slack payload: %w", err)
 	}
@@ -179,28 +194,40 @@ func postToSlack(ctx context.Context, webhookURL string, payload cloudWatchLogsP
 	return nil
 }
 
-func formatSlackMessage(logGroup string, logStream string, logEvents []cloudWatchLogRecord) string {
-	var builder strings.Builder
-	builder.WriteString("CloudWatch error logs received")
-	builder.WriteString(fmt.Sprintf(" (%d)", len(logEvents)))
-
+func formatSlackMessage(logGroup string, logStream string, logEvents []cloudWatchLogRecord) slackMessage {
+	header := ":fire: CloudWatch Error"
 	if logGroup != "" {
-		builder.WriteString("\nLog group: ")
-		builder.WriteString(logGroup)
+		header = fmt.Sprintf(":fire: *%s*", logGroup)
 	}
 
-	if logStream != "" {
-		builder.WriteString("\nLog stream: ")
-		builder.WriteString(logStream)
+	var msgBuilder strings.Builder
+	for i, logEvent := range logEvents {
+		if i > 0 {
+			msgBuilder.WriteString("\n")
+		}
+		msgBuilder.WriteString(normalizeLogMessage(logEvent.Message))
 	}
 
-	builder.WriteString("\nMessages:")
-	for index, logEvent := range logEvents {
-		builder.WriteString("\n")
-		builder.WriteString(fmt.Sprintf("%d. %s", index+1, normalizeLogMessage(logEvent.Message)))
+	return slackMessage{
+		Attachments: []slackAttachment{
+			{
+				Color: "#eb1607",
+				Blocks: []slackBlock{
+					{
+						Type: "section",
+						Text: &slackBlockText{Type: "mrkdwn", Text: header},
+					},
+					{
+						Type: "divider",
+					},
+					{
+						Type: "section",
+						Text: &slackBlockText{Type: "plain_text", Text: msgBuilder.String()},
+					},
+				},
+			},
+		},
 	}
-
-	return builder.String()
 }
 
 func normalizeLogMessage(logMessage string) string {
