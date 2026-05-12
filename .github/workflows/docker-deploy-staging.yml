@@ -22,6 +22,8 @@ jobs:
     strategy:
       matrix:
         service:
+          - name: alarms-slack
+            type: lambda
           - name: idp
             type: ecs
           - name: idp-event-exporter

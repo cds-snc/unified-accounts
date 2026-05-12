@@ -207,6 +207,15 @@ resource "aws_cloudwatch_metric_alarm" "idp_load_balancer_response_time" {
 #
 # Errors logged
 #
+resource "aws_cloudwatch_log_subscription_filter" "error_logged" {
+  for_each = local.error_logged_metric_patterns
+
+  name            = "${each.key}-error-logged"
+  log_group_name  = each.value.log_group_name
+  filter_pattern  = each.value.pattern
+  destination_arn = module.alarms_slack.function_arn
+}
+
 resource "aws_cloudwatch_log_metric_filter" "error_logged" {
   for_each = local.error_logged_metric_patterns
 
@@ -311,4 +320,55 @@ resource "aws_cloudwatch_query_definition" "ecs_errors" {
     | sort @timestamp desc
     | limit 100
   QUERY
+}
+
+#
+# Alarm error logs to Slack
+#
+module "alarms_slack" {
+  source    = "github.com/cds-snc/terraform-modules//lambda?ref=v11.2.2"
+  name      = "alarms-slack"
+  ecr_arn   = aws_ecr_repository.alarms_slack.arn
+  image_uri = "${aws_ecr_repository.alarms_slack.repository_url}:latest"
+
+  architectures = ["arm64"]
+  memory        = 1024
+  timeout       = 10
+  policies      = [data.aws_iam_policy_document.alarms_slack.json]
+
+  environment_variables = {
+    SLACK_WEBHOOK_SSM_PARAMETER_NAME = aws_ssm_parameter.cloudwatch_slack_webhook_url.name
+  }
+
+  billing_tag_value = var.billing_tag_value
+}
+
+data "aws_iam_policy_document" "alarms_slack" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "ssm:GetParameter",
+      "ssm:GetParameters",
+    ]
+    resources = [
+      aws_ssm_parameter.cloudwatch_slack_webhook_url.arn
+    ]
+  }
+}
+
+resource "aws_lambda_permission" "alarms_slack" {
+  for_each = local.error_logged_metric_patterns
+
+  statement_id  = "AllowExecutionFromCloudWatch-${each.key}"
+  action        = "lambda:InvokeFunction"
+  function_name = module.alarms_slack.function_name
+  principal     = "logs.amazonaws.com"
+  source_arn    = "arn:aws:logs:${var.region}:${var.account_id}:log-group:${each.value.log_group_name}:*"
+}
+
+resource "aws_ssm_parameter" "cloudwatch_slack_webhook_url" {
+  name  = "cloudwatch_slack_webhook_url"
+  type  = "SecureString"
+  value = var.cloudwatch_slack_webhook_url
+  tags  = local.common_tags
 }

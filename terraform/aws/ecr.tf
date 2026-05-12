@@ -1,3 +1,17 @@
+resource "aws_ecr_repository" "alarms_slack" {
+  name                 = "alarms-slack"
+  image_tag_mutability = "IMMUTABLE"
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+  tags = local.common_tags
+}
+
+resource "aws_ecr_lifecycle_policy" "alarms_slack" {
+  repository = aws_ecr_repository.alarms_slack.name
+  policy     = file("${path.module}/ecr-lifecycle.json")
+}
+
 resource "aws_ecr_repository" "idp" {
   name                 = "idp"
   image_tag_mutability = "IMMUTABLE"
