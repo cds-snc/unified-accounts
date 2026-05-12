@@ -172,6 +172,17 @@ data "aws_iam_policy_document" "pr_review_delete_unused" {
   statement {
     effect = "Allow"
     actions = [
+      "ecr:BatchDeleteImage",
+      "ecr:ListImages",
+    ]
+    resources = [
+      "arn:aws:ecr:${var.region}:${var.account_id}:repository/idp-login-pr"
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
       "lambda:ListFunctions"
     ]
     resources = ["*"]
