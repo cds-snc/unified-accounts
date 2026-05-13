@@ -158,7 +158,7 @@ resource "aws_wafv2_web_acl" "idp" {
               }
             }
             statement {
-              byte_match_statement {          
+              byte_match_statement {
                 field_to_match {
                   single_header {
                     name = "waf-geo-restriction-bypass"
