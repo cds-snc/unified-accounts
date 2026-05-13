@@ -1,6 +1,7 @@
 locals {
   excluded_bot_control_rules = [
     "CategoryHttpLibrary",       # Blocks OIDC auth flow
+    "SignalAutomatedBrowser",    # Block integration tests
     "SignalNonBrowserUserAgent", # Blocks API access
   ]
   excluded_common_rules = [
