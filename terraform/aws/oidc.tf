@@ -119,6 +119,8 @@ data "aws_iam_policy_document" "docker_deploy" {
   statement {
     effect = "Allow"
     actions = [
+      "lambda:GetFunction",
+      "lambda:GetFunctionConfiguration",
       "lambda:UpdateFunctionCode",
     ]
     resources = [
