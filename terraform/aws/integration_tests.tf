@@ -42,8 +42,8 @@ data "aws_iam_policy_document" "integration_tests" {
       "s3:PutObject"
     ]
     resources = [
-      module.integration_test_results.s3_bucket_arn,
-      "${module.integration_test_results.s3_bucket_arn}/*"
+      module.integration_tests.s3_bucket_arn,
+      "${module.integration_tests.s3_bucket_arn}/*"
     ]
   }
 }
