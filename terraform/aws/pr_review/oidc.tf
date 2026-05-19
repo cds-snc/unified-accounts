@@ -1,4 +1,6 @@
 locals {
+  integration_tests           = "platform-unified-accounts-integration-tests"
+  pr_integration_tests        = "platform-unified-accounts-pr-integration-tests"
   pr_review_delete_unused     = "platform-unified-accounts-user-portal-pr-review-delete-unused"
   pr_review_deploy            = "platform-unified-accounts-user-portal-pr-review-deploy"
   pr_review_get_vars          = "platform-unified-accounts-pr-review-get-vars"
@@ -14,6 +16,16 @@ module "github_workflow_roles" {
   source = "github.com/cds-snc/terraform-modules//gh_oidc_role?ref=v10.11.4"
 
   roles = [
+    {
+      name      = local.integration_tests
+      repo_name = "platform-unified-accounts-user-portal"
+      claim     = "ref:refs/heads/main"
+    },
+    {
+      name      = local.pr_integration_tests
+      repo_name = "platform-unified-accounts-user-portal"
+      claim     = "pull_request"
+    },
     {
       name      = local.pr_review_delete_unused
       repo_name = "platform-unified-accounts-user-portal"
@@ -32,6 +44,43 @@ module "github_workflow_roles" {
   ]
 
   billing_tag_value = var.billing_tag_value
+}
+
+#
+# Upload of integration test results
+#
+resource "aws_iam_role_policy_attachment" "integration_tests" {
+  role       = local.integration_tests
+  policy_arn = aws_iam_policy.integration_tests.arn
+
+  depends_on = [module.github_workflow_roles]
+}
+
+resource "aws_iam_role_policy_attachment" "pr_integration_tests" {
+  role       = local.pr_integration_tests
+  policy_arn = aws_iam_policy.integration_tests.arn
+
+  depends_on = [module.github_workflow_roles]
+}
+
+resource "aws_iam_policy" "integration_tests" {
+  name   = local.integration_tests
+  path   = "/"
+  policy = data.aws_iam_policy_document.integration_tests.json
+}
+
+data "aws_iam_policy_document" "integration_tests" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:ListBucket",
+      "s3:PutObject"
+    ]
+    resources = [
+      module.integration_test_results.s3_bucket_arn,
+      "${module.integration_test_results.s3_bucket_arn}/*"
+    ]
+  }
 }
 
 #

@@ -2,6 +2,7 @@ module "pr_review" {
   count  = var.env == "staging" ? 1 : 0
   source = "./pr_review"
 
+  env        = var.env
   region     = var.region
   account_id = var.account_id
 

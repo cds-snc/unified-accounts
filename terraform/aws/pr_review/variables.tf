@@ -19,6 +19,11 @@ variable "ecr_policy" {
   type        = string
 }
 
+variable "env" {
+  description = "The current running environment"
+  type        = string
+}
+
 variable "pr_review_env_ssm_params_get" {
   description = "ARNs of the SSM parameters the PR review environment is able to read"
   type        = list(string)
