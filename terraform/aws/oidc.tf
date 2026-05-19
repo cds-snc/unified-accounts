@@ -128,4 +128,14 @@ data "aws_iam_policy_document" "docker_deploy" {
       "arn:aws:lambda:${var.region}:${var.account_id}:function:idp-event-exporter",
     ]
   }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "ssm:PutParameter",
+    ]
+    resources = [
+      "arn:aws:ssm:${var.region}:${var.account_id}:parameter/ecs/idp/*",
+    ]
+  }
 }
