@@ -1,13 +1,14 @@
 name: Workflow failure
 
 on:
-  workflow_run:
-    workflows:
-      - "Docker build and push Staging"
-      - "Terraform Apply Staging"
-      - "Terraform Drift Check Staging"
-    types:
-      - completed
+  workflow_call:
+    secrets:
+      LOG_ANALYTICS_WORKSPACE_ID:
+        required: true
+      LOG_ANALYTICS_WORKSPACE_KEY:
+        required: true
+      SLACK_WEBHOOK_URL:
+        required: true
 
 permissions:
   contents: none
@@ -15,10 +16,6 @@ permissions:
 jobs:
   on-failure:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'failure'
-    env:
-      WORKFLOW_NAME: '${{ github.event.workflow_run.name }}'
-      WORKFLOW_URL: '${{ github.event.workflow_run.html_url }}'
     steps:
       - name: Audit DNS requests
         uses: cds-snc/dns-proxy-action@9ad793100229573be3f5ba78cc69ec523f2c8b7e # v1.1.0
@@ -29,17 +26,7 @@ jobs:
           DNS_PROXY_SAFELIST: "${{ vars.DNS_PROXY_SAFELIST }}"
           DNS_PROXY_WILDCARDGREEDY: "true"
 
-      - name: Determine target ops channel
-        id: webhook
-        run: |
-          WORKFLOW_NAME_LOWER="$(echo ${WORKFLOW_NAME} | tr '[:upper:]' '[:lower:]')"
-          if [[ "$WORKFLOW_NAME_LOWER" == *"staging"* ]]; then
-            echo "SLACK_WEBHOOK_URL=${{ secrets.STAGING_CLOUDWATCH_ALERT_SLACK_WEBHOOK }}" >> $GITHUB_OUTPUT
-          else
-            echo "SLACK_WEBHOOK_URL=${{ secrets.PROD_CLOUDWATCH_ALERT_SLACK_WEBHOOK }}" >> $GITHUB_OUTPUT
-          fi
-
       - name: Notify Slack
         run: |
-          json='{"blocks":[{"type":"section","text":{"type":"mrkdwn","text":":red: Unified Accounts workflow failed: <${{ github.event.workflow_run.html_url }}|${{ github.event.workflow_run.name }}>"}}]}'
-          curl -X POST -H 'Content-type: application/json' --data "$json" ${{ steps.webhook.outputs.SLACK_WEBHOOK_URL }}
+          json='{"blocks":[{"type":"section","text":{"type":"mrkdwn","text":":red: Unified Accounts workflow failed: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }}>"}}]}'
+          curl -X POST -H 'Content-type: application/json' --data "$json" "${{ secrets.SLACK_WEBHOOK_URL }}"
