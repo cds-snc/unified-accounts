@@ -77,3 +77,17 @@ jobs:
           --tag "${{ env.REGISTRY_PREFIX }}/${{ matrix.image }}:sha-$GITHUB_SHA" \
           --file ./docker/${{ matrix.image }}/Dockerfile \
           ./docker/${{ matrix.image }}
+
+  docker-deploy:
+    needs: docker-push
+    uses: ./.github/workflows/docker-deploy-staging.yml
+    secrets:
+      LOG_ANALYTICS_WORKSPACE_ID: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+      LOG_ANALYTICS_WORKSPACE_KEY: ${{ secrets.LOG_ANALYTICS_WORKSPACE_KEY }}
+
+  docker-sbom:
+    needs: docker-push
+    uses: ./.github/workflows/docker-sbom-staging.yml
+    secrets:
+      LOG_ANALYTICS_WORKSPACE_ID: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+      LOG_ANALYTICS_WORKSPACE_KEY: ${{ secrets.LOG_ANALYTICS_WORKSPACE_KEY }}
