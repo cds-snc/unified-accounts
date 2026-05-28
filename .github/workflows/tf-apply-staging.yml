@@ -44,7 +44,6 @@ permissions:
 
 jobs:
   terragrunt-apply:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     runs-on: ubuntu-latest
     steps:
@@ -84,3 +83,12 @@ jobs:
       - name: Apply Terraform
         working-directory: terraform/env/staging
         run: terragrunt run --non-interactive -- apply -auto-approve
+
+  workflow-failure:
+    needs: [terragrunt-apply]
+    if: failure()
+    uses: ./.github/workflows/workflow-failure.yml
+    secrets:
+      LOG_ANALYTICS_WORKSPACE_ID: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+      LOG_ANALYTICS_WORKSPACE_KEY: ${{ secrets.LOG_ANALYTICS_WORKSPACE_KEY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.STAGING_CLOUDWATCH_ALERT_SLACK_WEBHOOK }}

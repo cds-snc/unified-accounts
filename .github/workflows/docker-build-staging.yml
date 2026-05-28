@@ -7,6 +7,8 @@ on:
     paths:
       - "docker/**"
       - ".github/workflows/docker-build-staging.yml"
+      - ".github/workflows/docker-deploy-staging.yml"
+      - ".github/workflows/docker-sbom-staging.yml"
 
 env: 
   AWS_REGION: ca-central-1
@@ -19,7 +21,6 @@ permissions:
   
 jobs:
   docker-push:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-24.04-arm
     strategy:
       matrix:
@@ -77,3 +78,26 @@ jobs:
           --tag "${{ env.REGISTRY_PREFIX }}/${{ matrix.image }}:sha-$GITHUB_SHA" \
           --file ./docker/${{ matrix.image }}/Dockerfile \
           ./docker/${{ matrix.image }}
+
+  docker-deploy:
+    needs: docker-push
+    uses: ./.github/workflows/docker-deploy-staging.yml
+    secrets:
+      LOG_ANALYTICS_WORKSPACE_ID: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+      LOG_ANALYTICS_WORKSPACE_KEY: ${{ secrets.LOG_ANALYTICS_WORKSPACE_KEY }}
+
+  docker-sbom:
+    needs: docker-push
+    uses: ./.github/workflows/docker-sbom-staging.yml
+    secrets:
+      LOG_ANALYTICS_WORKSPACE_ID: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+      LOG_ANALYTICS_WORKSPACE_KEY: ${{ secrets.LOG_ANALYTICS_WORKSPACE_KEY }}
+
+  workflow-failure:
+    needs: [docker-push, docker-deploy]
+    if: failure()
+    uses: ./.github/workflows/workflow-failure.yml
+    secrets:
+      LOG_ANALYTICS_WORKSPACE_ID: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+      LOG_ANALYTICS_WORKSPACE_KEY: ${{ secrets.LOG_ANALYTICS_WORKSPACE_KEY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.STAGING_CLOUDWATCH_ALERT_SLACK_WEBHOOK }}

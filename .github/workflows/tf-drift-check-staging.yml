@@ -77,3 +77,12 @@ jobs:
         run: |
           terragrunt init
           terragrunt plan -detailed-exitcode
+
+  workflow-failure:
+    needs: [terraform-drift]
+    if: failure()
+    uses: ./.github/workflows/workflow-failure.yml
+    secrets:
+      LOG_ANALYTICS_WORKSPACE_ID: ${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+      LOG_ANALYTICS_WORKSPACE_KEY: ${{ secrets.LOG_ANALYTICS_WORKSPACE_KEY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.STAGING_CLOUDWATCH_ALERT_SLACK_WEBHOOK }}
